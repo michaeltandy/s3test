@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import uk.me.mjt.s3test.xml.ListBucketsXmlDocument;
+import uk.me.mjt.s3test.xml.ListObjectsXmlDocument;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -172,55 +173,26 @@ public class S3Server {
     }
 
     private void handleListBuckets(HttpExchange exchange) throws IOException {
-        ListBucketsXmlDocument listBucketsXmlSerializer =
+        ListBucketsXmlDocument listBucketsXmlDocument =
                 new ListBucketsXmlDocument(
                         buckets,
                         S3_TEST_OWNER_ID,
                         S3_TEST_OWNER_DISPLAY_NAME
                 );
-        listBucketsXmlSerializer.build();
-        respondOkAndClose(exchange, listBucketsXmlSerializer.toUtf8Bytes());
+        listBucketsXmlDocument.build();
+        respondOkAndClose(exchange, listBucketsXmlDocument.toUtf8Bytes());
     }
 
     private void handleListObjects(HttpExchange exchange, String bucketName, String prefix) throws IOException {
-        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                "<ListBucketResult>" +
-                "<Name>" + bucketName + "</Name>" +
-                "<Prefix/>" +
-                "<Marker/>" +
-                "<IsTruncated>false</IsTruncated>";
-
-        Bucket bucket = buckets.get(bucketName);
-        for(String objectName : bucket.keySet()) {
-            if(objectNameHasPrefix(prefix, objectName)) {
-                StoredObject storedObject = bucket.get(objectName);
-                response = response +
-                        "<Contents>" +
-                        "<Key>" + objectName + "</Key>" +
-                        "<ETag>\"" + storedObject.md5HexString() + "\"</ETag>" +
-                        "<Size>" + storedObject.getContent().length + "</Size>" +
-                        "<Owner>" +
-                        "<ID>" + S3_TEST_OWNER_ID + "</ID>" +
-                        "<DisplayName>" + S3_TEST_OWNER_DISPLAY_NAME + "</DisplayName>" +
-                        "</Owner>" +
-                        "<StorageClass>STANDARD</StorageClass>" +
-                        "</Contents>";
-            }
-        }
-
-        response = response +
-                "</ListBucketResult>";
-        respondOkAndClose(exchange, response.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private boolean objectNameHasPrefix(String prefix, String objectName) {
-        if(prefix.isEmpty()) {
-            return true;
-        }
-        if(objectName.startsWith("/")) {
-            objectName = objectName.substring(1);
-        }
-        return objectName.startsWith(prefix);
+        ListObjectsXmlDocument listObjectsXmlDocument =
+                new ListObjectsXmlDocument(
+                        buckets.get(bucketName),
+                        prefix,
+                        S3_TEST_OWNER_ID,
+                        S3_TEST_OWNER_DISPLAY_NAME
+                );
+        listObjectsXmlDocument.build();
+        respondOkAndClose(exchange, listObjectsXmlDocument.toUtf8Bytes());
     }
 
     private void handlePut(HttpExchange exchange) throws IOException {
@@ -263,7 +235,7 @@ public class S3Server {
         }
     }
 
-    private void handlePutBucket(HttpExchange exchange,String bucketName) throws IOException {
+    private void handlePutBucket(HttpExchange exchange, String bucketName) throws IOException {
         byte[] reqBody = readRequestBodyFully(exchange);
 
         if (!bucketNameValid(bucketName)) {
@@ -272,7 +244,7 @@ public class S3Server {
             respondErrorAndClose(exchange, ErrorResponse.BUCKET_ALREADY_EXISTS);
         } else {
             System.out.println("Creating bucket " + bucketName + ".");
-            buckets.put(bucketName, new Bucket());
+            buckets.put(bucketName, new Bucket(bucketName));
             addHeader(exchange, HttpHeaders.LOCATION, "/" + bucketName);
             respondOkAndClose(exchange);
         }

@@ -7,9 +7,9 @@ import java.util.Map;
 
 public class ListBucketsXmlDocument extends XmlDocument {
 
-    private Map<String, Bucket> buckets;
-    private String ownerId;
-    private String ownerDisplayName;
+    private final Map<String, Bucket> buckets;
+    private final String ownerId;
+    private final String ownerDisplayName;
 
     public ListBucketsXmlDocument(Map<String, Bucket> buckets,
                                   String ownerId,
