@@ -145,8 +145,8 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
 
             fail("Wrongly allowed key " + key);
         } catch (AmazonS3Exception e) {
-            assertEquals(400,e.getStatusCode());
-            assertEquals("400 Invalid URI",e.getErrorCode());
+            assertEquals(ErrorResponse.INVALID_URI.getStatusCode(), e.getStatusCode());
+            assertEquals(ErrorResponse.INVALID_URI.getCode(), e.getErrorCode());
         }
     }
     
