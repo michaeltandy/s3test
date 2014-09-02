@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 public class S3Server {
     public static final int NUMBER_OF_THREADS = 3;
 
-    private static final Pattern CREATE_BUCKET_PATTERN = Pattern.compile("/([^/]+)/"); // Format is like "/bucketname/"
+    private static final Pattern BUCKET_PATTERN = Pattern.compile("/([^/]+)/"); // Format is like "/bucketname/"
     private static final Pattern REQUEST_PATH_PATTERN = Pattern.compile("/([^/]+)/(.+)"); // Format is like "/bucketname/asdf.txt"
     private static final Pattern DOUBLE_DOT_PATTERN = Pattern.compile("(.*/)?\\.\\./+\\.\\.(/.*)?");
 
@@ -106,8 +106,20 @@ public class S3Server {
     private void handleGet(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
         if(path.equals("/")) {
-            respondWithBucketListAndClose(exchange);
+            handleListBuckets(exchange);
             return;
+        }
+
+        Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
+        if(bucketPatternMatcher.matches()) {
+            String bucketName = bucketPatternMatcher.group(1);
+            if(buckets.containsKey(bucketName)) {
+                handleListObjects(exchange, bucketName);
+                return;
+            } else {
+                respondErrorAndClose(exchange, ErrorResponse.NO_SUCH_BUCKET);
+                return;
+            }
         }
 
         Matcher matcher = REQUEST_PATH_PATTERN.matcher(path);
@@ -135,10 +147,62 @@ public class S3Server {
         }
     }
 
+    private void handleListBuckets(HttpExchange exchange) throws IOException {
+        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<ListAllMyBucketsResult>\n" +
+            "   <Owner>\n" +
+            "       <DisplayName>S3 Test</DisplayName>\n" +
+            "   </Owner>\n" +
+            "   <Buckets>\n";
+
+        for(String bucketName : buckets.keySet()) {
+            response = response +
+                "       <Bucket>\n" +
+                "           <Name>" + bucketName + "</Name>" +
+                "       </Bucket>\n";
+        }
+
+        response = response +
+            "   </Buckets>\n" +
+            "</ListAllMyBucketsResult>";
+        respondOkAndClose(exchange, response.getBytes());
+    }
+
+    private void handleListObjects(HttpExchange exchange, String bucketName) throws IOException {
+        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<ListBucketResult>\n" +
+            "   <Name>" + bucketName + "</Name>\n" +
+            "   <Prefix/>\n" +
+            "   <Marker/>\n" +
+            "   <MaxKeys>1000</MaxKeys>\n" +
+            "   <IsTruncated>false</IsTruncated>\n";
+
+        Bucket bucket = buckets.get(bucketName);
+        for(String objectName : bucket.keySet()) {
+            StoredObject storedObject = bucket.get(objectName);
+            response = response +
+                "       <Contents>\n" +
+                "           <Key>" + objectName + "</Key>" +
+                "           <LastModified>" + "2014-06-30T14:44:48.000Z" + "</LastModified>" +
+                "           <ETag>\"" + storedObject.md5HexString() + "\"</ETag>" +
+                "           <Size>" + storedObject.getContent().length + "</Size>" +
+                "           <Owner>" +
+                "               <ID>1a542c1f154dd21c5baff54212</ID>" +
+                "               <DisplayName>s3-test</DisplayName>" +
+                "           </Owner>" +
+                "           <StorageClass>STANDARD</StorageClass>" +
+                "       </Contents>\n";
+        }
+
+        response = response +
+            "</ListBucketResult>";
+        respondOkAndClose(exchange, response.getBytes());
+    }
+
     private void handlePut(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
 
-        Matcher bucket = CREATE_BUCKET_PATTERN.matcher(path);
+        Matcher bucket = BUCKET_PATTERN.matcher(path);
         if (bucket.matches()) {
             String bucketName = bucket.group(1);
             handlePutBucket(exchange, bucketName);
@@ -202,7 +266,7 @@ public class S3Server {
     private void handleDelete(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
 
-        Matcher bucket = CREATE_BUCKET_PATTERN.matcher(path);
+        Matcher bucket = BUCKET_PATTERN.matcher(path);
         if (bucket.matches()) {
             String bucketName = bucket.group(1);
             handleDeleteBucket(exchange,bucketName);
@@ -242,7 +306,6 @@ public class S3Server {
         } else {
             respondErrorAndClose(exchange, ErrorResponse.NO_SUCH_BUCKET);
         }
-
     }
 
     private void addHeader(HttpExchange exchange, String name, String value) {
@@ -253,27 +316,6 @@ public class S3Server {
         // set. But not if you use 'putAll' so that's what I use.
         Map<String, List<String>> responseHeaders = Collections.singletonMap(name, Collections.singletonList(value));
         exchange.getResponseHeaders().putAll(responseHeaders);
-    }
-
-    private void respondWithBucketListAndClose(HttpExchange exchange) throws IOException {
-        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-            "<ListAllMyBucketsResult>\n" +
-            "   <Owner>\n" +
-            "       <DisplayName>S3 Test</DisplayName>\n" +
-            "   </Owner>\n" +
-            "   <Buckets>\n";
-
-        for(String bucketName : buckets.keySet()) {
-            response = response +
-                "       <Bucket>\n" +
-                "           <Name>" + bucketName + "</Name>" +
-                "       </Bucket>\n";
-        }
-
-        response = response +
-            "   </Buckets>\n" +
-            "</ListAllMyBucketsResult>";
-        respondOkAndClose(exchange, response.getBytes());
     }
 
     private void respondFoundObjectAndClose(HttpExchange exchange, StoredObject obj) throws IOException {
