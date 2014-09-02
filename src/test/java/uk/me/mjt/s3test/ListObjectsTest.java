@@ -46,6 +46,55 @@ public class ListObjectsTest extends BasicTestSuperclass {
         assertTrue(objectKeys.contains("/file/with/loads/of/slashes-3.png"));
    }
 
+    @Test
+    public void testListObjectsWithPrefix() throws Exception {
+        client.createBucket("test-bucket");
+        putObject("test-bucket", "no-path-1", "foobar");
+        putObject("test-bucket", "no-path-2", "");
+        putObject("test-bucket", "/one/prefix-1.xml", "foobar");
+        putObject("test-bucket", "/one/two/prefix-1.xml", "foobar");
+        putObject("test-bucket", "/two/prefix-1.xml", "foobar");
+        putObject("test-bucket", "/file/with/loads/of/slashes-3.png", "dfsrgt3");
+
+        ObjectListing objectListing = client.listObjects("test-bucket", "one");
+
+        List<String> objectKeys = new ArrayList<>();
+
+        for(S3ObjectSummary s3ObjectSummary : objectListing.getObjectSummaries()) {
+            assertEquals("test-bucket", s3ObjectSummary.getBucketName());
+            objectKeys.add(s3ObjectSummary.getKey());
+        }
+
+        assertEquals(2, objectKeys.size());
+        assertTrue(objectKeys.contains("/one/prefix-1.xml"));
+        assertTrue(objectKeys.contains("/one/two/prefix-1.xml"));
+    }
+
+    @Test
+    public void testListObjectsWithNoPathWithPrefix() throws Exception {
+        client.createBucket("test-bucket");
+        putObject("test-bucket", "no-path-1", "foobar");
+        putObject("test-bucket", "no-path-2", "");
+        putObject("test-bucket", "/one/prefix-1.xml", "foobar");
+        putObject("test-bucket", "/no-path/two/prefix-1.xml", "foobar");
+        putObject("test-bucket", "/two/prefix-1.xml", "foobar");
+        putObject("test-bucket", "/file/with/loads/of/slashes-3.png", "dfsrgt3");
+
+        ObjectListing objectListing = client.listObjects("test-bucket", "no-path");
+
+        List<String> objectKeys = new ArrayList<>();
+
+        for(S3ObjectSummary s3ObjectSummary : objectListing.getObjectSummaries()) {
+            assertEquals("test-bucket", s3ObjectSummary.getBucketName());
+            objectKeys.add(s3ObjectSummary.getKey());
+        }
+
+        assertEquals(3, objectKeys.size());
+        assertTrue(objectKeys.contains("no-path-1"));
+        assertTrue(objectKeys.contains("no-path-2"));
+        assertTrue(objectKeys.contains("/no-path/two/prefix-1.xml"));
+    }
+
     private void putObject(String bucketName, String name, String data) throws Exception {
         byte[] content = data.getBytes("UTF-8");
         ObjectMetadata metadata = new ObjectMetadata();
