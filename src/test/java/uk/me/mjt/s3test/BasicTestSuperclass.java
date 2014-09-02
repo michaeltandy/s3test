@@ -26,7 +26,7 @@ public class BasicTestSuperclass {
     public void setUp() throws Exception {
         instance = new S3Server();
         instance.start();
-        Thread.sleep(100);
+
         client = new AmazonS3Client(new StaticCredentialsProvider(new AnonymousAWSCredentials()));
         client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
         //client.setEndpoint("http://localhost:8123");
@@ -37,7 +37,6 @@ public class BasicTestSuperclass {
     public void tearDown() throws Exception {
         client.shutdown();
         instance.stop();
-        Thread.sleep(1000);
     }
 
     public void createDefaultBucket() throws Exception {
