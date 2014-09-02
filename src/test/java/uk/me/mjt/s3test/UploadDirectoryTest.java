@@ -3,12 +3,19 @@ package uk.me.mjt.s3test;
 import com.amazonaws.services.s3.transfer.MultipleFileUpload;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import java.io.File;
+
+import org.junit.Before;
 import org.junit.Test;
 
-public class UploadDirectoryTest extends BasicTestSuperclass{
-    public UploadDirectoryTest() {
+public class UploadDirectoryTest extends BasicTestSuperclass {
+
+    @Override
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        createDefaultBucket();
     }
-    
+
     @Test
     public void transferDirectory() throws Exception {
         File dirToUpload = new File(UploadDirectoryTest.class.getResource("/directoryToUpload").toURI());

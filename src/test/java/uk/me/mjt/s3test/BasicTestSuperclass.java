@@ -4,8 +4,13 @@ import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.junit.After;
 import org.junit.Before;
 
@@ -18,7 +23,7 @@ public class BasicTestSuperclass {
     }
     
     @Before
-    public void setUp() throws IOException, InterruptedException {
+    public void setUp() throws Exception {
         instance = new S3Server();
         instance.start();
         Thread.sleep(100);
@@ -29,10 +34,25 @@ public class BasicTestSuperclass {
     }
     
     @After
-    public void tearDown() throws InterruptedException {
+    public void tearDown() throws Exception {
         client.shutdown();
         instance.stop();
         Thread.sleep(1000);
+    }
+
+    public void createDefaultBucket() throws Exception {
+        createDefaultBucket(client);
+    }
+
+    public static void createDefaultBucket(AmazonS3Client client) throws Exception {
+        client.createBucket("bucketname");
+
+        byte[] content = "asdf".getBytes("UTF-8");
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(content.length);
+
+        PutObjectRequest s3request = new PutObjectRequest("bucketname", "asdf.txt", new ByteArrayInputStream(content), metadata);
+        client.putObject(s3request);
     }
     
     static String inputStreamToString(InputStream is) {

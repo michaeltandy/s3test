@@ -51,7 +51,6 @@ public class S3Server {
         this.httpServer = HttpServer.create();
         this.address = address;
         createContext();
-        createDefaultBucket();
     }
 
     public void start() throws IOException {
@@ -104,14 +103,13 @@ public class S3Server {
         });
     }
 
-    private void createDefaultBucket() {
-        Bucket defaultBucket = new Bucket();
-        defaultBucket.put("asdf.txt", new StoredObject("asdf"));
-        buckets.put("bucketname", defaultBucket);
-    }
-
     private void handleGet(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
+        if(path.equals("/")) {
+            respondWithBucketListAndClose(exchange);
+            return;
+        }
+
         Matcher matcher = REQUEST_PATH_PATTERN.matcher(path);
         if (!matcher.matches()) {
             respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
@@ -202,7 +200,6 @@ public class S3Server {
     }
 
     private void handleDelete(HttpExchange exchange) throws IOException {
-        System.out.println("DELETE " + exchange.getRequestURI());
         String path = exchange.getRequestURI().getPath();
 
         Matcher bucket = CREATE_BUCKET_PATTERN.matcher(path);
@@ -256,6 +253,27 @@ public class S3Server {
         // set. But not if you use 'putAll' so that's what I use.
         Map<String, List<String>> responseHeaders = Collections.singletonMap(name, Collections.singletonList(value));
         exchange.getResponseHeaders().putAll(responseHeaders);
+    }
+
+    private void respondWithBucketListAndClose(HttpExchange exchange) throws IOException {
+        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<ListAllMyBucketsResult>\n" +
+            "   <Owner>\n" +
+            "       <DisplayName>S3 Test</DisplayName>\n" +
+            "   </Owner>\n" +
+            "   <Buckets>\n";
+
+        for(String bucketName : buckets.keySet()) {
+            response = response +
+                "       <Bucket>\n" +
+                "           <Name>" + bucketName + "</Name>" +
+                "       </Bucket>\n";
+        }
+
+        response = response +
+            "   </Buckets>\n" +
+            "</ListAllMyBucketsResult>";
+        respondOkAndClose(exchange, response.getBytes());
     }
 
     private void respondFoundObjectAndClose(HttpExchange exchange, StoredObject obj) throws IOException {

@@ -33,7 +33,7 @@ public class TestKeyNamesS3Rejects {
         
     }
     
-    final ArrayList<String> prefixTestResults = new ArrayList(); 
+    final ArrayList<String> prefixTestResults = new ArrayList<>();
     
     public void testDoubleDots() throws Exception {
         String filename = System.getProperty("user.home")+"/aws.properties";
