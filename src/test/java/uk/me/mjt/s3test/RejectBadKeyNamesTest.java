@@ -8,13 +8,22 @@ import java.io.ByteArrayInputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+
+import org.junit.Before;
 import org.junit.Test;
 
 public class RejectBadKeyNamesTest extends BasicTestSuperclass {
     
     public RejectBadKeyNamesTest() {
     }
-    
+
+    @Override
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        createDefaultBucket();
+    }
+
     @Test
     public void testShouldAccept() {
         testShouldAllowKey("asdf");
@@ -145,8 +154,8 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
 
             fail("Wrongly allowed key " + key);
         } catch (AmazonS3Exception e) {
-            assertEquals(400,e.getStatusCode());
-            assertEquals("400 Invalid URI",e.getErrorCode());
+            assertEquals(ErrorResponse.INVALID_URI.getStatusCode(), e.getStatusCode());
+            assertEquals(ErrorResponse.INVALID_URI.getCode(), e.getErrorCode());
         }
     }
     

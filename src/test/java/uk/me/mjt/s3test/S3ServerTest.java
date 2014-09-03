@@ -3,8 +3,9 @@ package uk.me.mjt.s3test;
 import com.amazonaws.services.s3.model.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import static org.junit.Assert.*;
+
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -15,7 +16,14 @@ public class S3ServerTest extends BasicTestSuperclass {
     
     public S3ServerTest() {
     }
-    
+
+    @Override
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        createDefaultBucket();
+    }
+
     @Test
     public void testBasicGet() {
         GetObjectRequest s3request = new GetObjectRequest("bucketname", "asdf.txt");
