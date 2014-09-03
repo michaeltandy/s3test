@@ -4,6 +4,8 @@ An in-memory fake S3, presented as a Java HTTP server you can point your S3 clie
 
 Written in core java, with no external dependencies (not even the AWS client or a logging framework).
 
+![Travis Continuous Integration build status image](https://api.travis-ci.org/michaeltandy/s3test.svg)
+
 ## So how do I use it?
 
 ```
