@@ -5,7 +5,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import static org.junit.Assert.*;
 
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -16,14 +15,7 @@ public class S3ServerTest extends BasicTestSuperclass {
     
     public S3ServerTest() {
     }
-
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        createDefaultBucket();
-    }
-
+    
     @Test
     public void testBasicGet() {
         GetObjectRequest s3request = new GetObjectRequest("bucketname", "asdf.txt");
@@ -46,6 +38,19 @@ public class S3ServerTest extends BasicTestSuperclass {
         S3Object getResponse = client.getObject("bucketname", "qwer.txt");
         String getContent = inputStreamToString(getResponse.getObjectContent());
         assertEquals("qwer",getContent);
+    }
+    
+    @Test
+    public void testDelete_thenGet() throws IOException {
+        client.getObject("bucketname", "asdf.txt");
+        client.deleteObject("bucketname", "asdf.txt");
+        try {
+            S3Object r2 = client.getObject("bucketname", "asdf.txt");
+            fail("Should have thrown an exception by now??");
+        } catch (AmazonS3Exception e) {
+            assertEquals(404,e.getStatusCode());
+            assertEquals("NoSuchKey",e.getErrorCode());
+        }
     }
         
 }

@@ -26,16 +26,13 @@ public class BasicTestSuperclass {
         client = new AmazonS3Client(new StaticCredentialsProvider(new AnonymousAWSCredentials()));
         client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
         client.setEndpoint(instance.getAddress());
+        createDefaultBucket(client);
     }
     
     @After
     public void tearDown() throws Exception {
         client.shutdown();
         instance.stop();
-    }
-
-    public void createDefaultBucket() throws Exception {
-        createDefaultBucket(client);
     }
 
     public static void createDefaultBucket(AmazonS3Client client) throws Exception {
@@ -47,6 +44,10 @@ public class BasicTestSuperclass {
 
         PutObjectRequest s3request = new PutObjectRequest("bucketname", "asdf.txt", new ByteArrayInputStream(content), metadata);
         client.putObject(s3request);
+    }
+    
+    public void removeDefaultBucket() throws Exception {
+        client.deleteBucket("bucketname");
     }
     
     static String inputStreamToString(InputStream is) {

@@ -24,32 +24,20 @@ public enum ErrorResponse {
         return code;
     }
 
-    public String getMessage() {
+    /*public String getMessage() {
         return message;
-    }
+    }*/
 
     public int getStatusCode() {
         return statusCode;
     }
 
     public String getAsXml() {
-        return getAsXml("", "");
-    }
-
-    public String getAsXml(String resource, String requestId) {
         String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
             "<Error>" +
             "<Code>" + code + "</Code>" +
-            "<Message>" + message + "</Message>";
-        if(resource != null && !resource.isEmpty()) {
-            response = response +
-                "<Resource>" + resource + "</Resource>";
-        }
-        if(requestId != null && !requestId.isEmpty()) {
-            response = response +
-                "<RequestId>" + requestId + "</RequestId>";
-        }
-        response = response + "</Error>";
+            "<Message>" + message + "</Message>" +
+            "</Error>";
         return response;
     }
 }

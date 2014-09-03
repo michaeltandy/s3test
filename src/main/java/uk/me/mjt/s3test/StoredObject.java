@@ -15,9 +15,9 @@ public class StoredObject {
         this.content = content;
     }
     
-    StoredObject(String s) {
+    /*StoredObject(String s) {
         this(s.getBytes());
-    }
+    }*/
     
     public byte[] getContent() {
         return content;

@@ -12,11 +12,13 @@ import static junit.framework.Assert.assertTrue;
 public class ListBucketsTest extends BasicTestSuperclass {
     @Test
     public void listBucketsOnEmpty() throws Exception {
+        removeDefaultBucket();
         assertTrue(client.listBuckets().isEmpty());
     }
 
     @Test
     public void listBucketsShouldReturnExpectedBuckets() throws Exception {
+        removeDefaultBucket();
         client.createBucket("bucket-1");
         client.createBucket("bucket-2");
         client.createBucket("bucket-3");
