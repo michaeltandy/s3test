@@ -19,17 +19,12 @@ public class BasicTestSuperclass {
     S3Server instance;
     AmazonS3Client client;
     
-    public BasicTestSuperclass() {
-    }
-    
     @Before
     public void setUp() throws Exception {
         instance = new S3Server();
         instance.start();
-
         client = new AmazonS3Client(new StaticCredentialsProvider(new AnonymousAWSCredentials()));
         client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
-        //client.setEndpoint("http://localhost:8123");
         client.setEndpoint(instance.getAddress());
     }
     

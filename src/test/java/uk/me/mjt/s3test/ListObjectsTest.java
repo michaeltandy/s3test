@@ -7,6 +7,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -96,7 +97,7 @@ public class ListObjectsTest extends BasicTestSuperclass {
     }
 
     private void putObject(String bucketName, String name, String data) throws Exception {
-        byte[] content = data.getBytes("UTF-8");
+        byte[] content = data.getBytes(StandardCharsets.UTF_8);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(content.length);
 

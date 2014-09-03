@@ -37,17 +37,17 @@ public enum ErrorResponse {
     }
 
     public String getAsXml(String resource, String requestId) {
-        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-            "<Error>\n" +
-            "  <Code>" + code + "</Code>\n" +
-            "  <Message>" + message + "</Message>\n";
+        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+            "<Error>" +
+            "<Code>" + code + "</Code>" +
+            "<Message>" + message + "</Message>";
         if(resource != null && !resource.isEmpty()) {
             response = response +
-                "  <Resource>" + resource + "</Resource>\n";
+                "<Resource>" + resource + "</Resource>";
         }
         if(requestId != null && !requestId.isEmpty()) {
             response = response +
-                "  <RequestId>" + requestId + "</RequestId>\n";
+                "<RequestId>" + requestId + "</RequestId>";
         }
         response = response + "</Error>";
         return response;
