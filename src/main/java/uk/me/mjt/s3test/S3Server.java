@@ -4,18 +4,10 @@ package uk.me.mjt.s3test;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import uk.me.mjt.s3test.xml.ListBucketsXmlDocument;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
@@ -44,9 +36,9 @@ public class S3Server {
     // Bucket names must follow DNS rules from http://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
     private static final Pattern BUCKET_NAME_MUST_MATCH_PATTERN = Pattern.compile("[a-z0-9\\.\\-]{3,63}");
     private static final Pattern BUCKET_NAME_MUST_NOT_MATCH_PATTERN = Pattern.compile("(^[\\.\\-])|"
-        + "([\\.\\-]$)|"
-        + "([\\.\\-]{2})|"
-        + "(^\\d+\\.\\d+\\.\\d+\\.\\d+$)");
+            + "([\\.\\-]$)|"
+            + "([\\.\\-]{2})|"
+            + "(^\\d+\\.\\d+\\.\\d+\\.\\d+$)");
     public static final int BASE_PORT_NUMBER = 8000;
     public static final int PORT_NUMBER_RANGE = 1000;
     public static final String PREFIX_QUERY_PARAMETER_NAME = "prefix";
@@ -180,107 +172,44 @@ public class S3Server {
     }
 
     private void handleListBuckets(HttpExchange exchange) throws IOException {
-        try {
-            Document document = getNewDocument();
-            Element rootElement = document.createElement("ListAllMyBucketsResult");
-            document.appendChild(rootElement);
-
-            Element owner = getOwnerElement(document);
-            rootElement.appendChild(owner);
-
-            Element bucketsElement = document.createElement("Buckets");
-            rootElement.appendChild(bucketsElement);
-
-            for (String bucketName : buckets.keySet()) {
-                Bucket bucket = buckets.get(bucketName);
-                Element bucketElement = getBucketElement(document, bucketName, bucket);
-                bucketsElement.appendChild(bucketElement);
-            }
-
-            respondOkAndClose(exchange, documentToUtf8Bytes(document));
-        } catch (ParserConfigurationException e) {
-            throw new IOException(e);
-        }
-    }
-
-    private Element getBucketElement(Document document, String bucketName, Bucket bucket) {
-        Element bucketElement = document.createElement("Bucket");
-
-        Element name = document.createElement("Name");
-        name.appendChild(document.createTextNode(bucketName));
-        bucketElement.appendChild(name);
-
-        Element creationDate = document.createElement("CreationDate");
-        creationDate.appendChild(document.createTextNode(bucket.getCreationDateString()));
-        bucketElement.appendChild(creationDate);
-        return bucketElement;
-    }
-
-    private Element getOwnerElement(Document document) {
-        Element owner = document.createElement("Owner");
-
-        Element id = document.createElement("ID");
-        id.appendChild(document.createTextNode(S3_TEST_OWNER_ID));
-        owner.appendChild(id);
-
-        Element displayName = document.createElement("DisplayName");
-        displayName.appendChild(document.createTextNode(S3_TEST_OWNER_DISPLAY_NAME));
-        owner.appendChild(displayName);
-
-        return owner;
-    }
-
-    private byte[] documentToUtf8Bytes(Document document) throws IOException {
-        return documentToString(document).getBytes(StandardCharsets.UTF_8);
-    }
-
-    private String documentToString(Document document) throws IOException {
-        try {
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            StringWriter writer = new StringWriter();
-            transformer.transform(new DOMSource(document), new StreamResult(writer));
-            return writer.getBuffer().toString();
-        } catch (TransformerException e) {
-            throw new IOException(e);
-        }
-    }
-
-    private Document getNewDocument() throws ParserConfigurationException {
-        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-
-        return documentBuilder.newDocument();
+        ListBucketsXmlDocument listBucketsXmlSerializer =
+                new ListBucketsXmlDocument(
+                        buckets,
+                        S3_TEST_OWNER_ID,
+                        S3_TEST_OWNER_DISPLAY_NAME
+                );
+        listBucketsXmlSerializer.build();
+        respondOkAndClose(exchange, listBucketsXmlSerializer.toUtf8Bytes());
     }
 
     private void handleListObjects(HttpExchange exchange, String bucketName, String prefix) throws IOException {
         String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-            "<ListBucketResult>" +
-            "<Name>" + bucketName + "</Name>" +
-            "<Prefix/>" +
-            "<Marker/>" +
-            "<IsTruncated>false</IsTruncated>";
+                "<ListBucketResult>" +
+                "<Name>" + bucketName + "</Name>" +
+                "<Prefix/>" +
+                "<Marker/>" +
+                "<IsTruncated>false</IsTruncated>";
 
         Bucket bucket = buckets.get(bucketName);
         for(String objectName : bucket.keySet()) {
             if(objectNameHasPrefix(prefix, objectName)) {
                 StoredObject storedObject = bucket.get(objectName);
                 response = response +
-                    "<Contents>" +
-                    "<Key>" + objectName + "</Key>" +
-                    "<ETag>\"" + storedObject.md5HexString() + "\"</ETag>" +
-                    "<Size>" + storedObject.getContent().length + "</Size>" +
-                    "<Owner>" +
-                    "<ID>" + S3_TEST_OWNER_ID + "</ID>" +
-                    "<DisplayName>" + S3_TEST_OWNER_DISPLAY_NAME + "</DisplayName>" +
-                    "</Owner>" +
-                    "<StorageClass>STANDARD</StorageClass>" +
-                    "</Contents>";
+                        "<Contents>" +
+                        "<Key>" + objectName + "</Key>" +
+                        "<ETag>\"" + storedObject.md5HexString() + "\"</ETag>" +
+                        "<Size>" + storedObject.getContent().length + "</Size>" +
+                        "<Owner>" +
+                        "<ID>" + S3_TEST_OWNER_ID + "</ID>" +
+                        "<DisplayName>" + S3_TEST_OWNER_DISPLAY_NAME + "</DisplayName>" +
+                        "</Owner>" +
+                        "<StorageClass>STANDARD</StorageClass>" +
+                        "</Contents>";
             }
         }
 
         response = response +
-            "</ListBucketResult>";
+                "</ListBucketResult>";
         respondOkAndClose(exchange, response.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -472,7 +401,7 @@ public class S3Server {
             }
         }
         throw new IOException("Made several attempts to bind to a randomly "
-            + "chosen port and failed each time. Weird.");
+                + "chosen port and failed each time. Weird.");
     }
 
     private boolean attemptToBind(int port) throws IOException {
