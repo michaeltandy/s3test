@@ -6,10 +6,7 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.BindException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -111,6 +108,25 @@ public abstract class Server {
         // set. But not if you use 'putAll' so that's what I use.
         Map<String, List<String>> responseHeaders = Collections.singletonMap(name, Collections.singletonList(value));
         exchange.getResponseHeaders().putAll(responseHeaders);
+    }
+
+    protected void respondAndClose(HttpExchange exchange, int httpCode) throws IOException {
+        respondAndClose(exchange, httpCode, new byte[0]);
+    }
+
+    protected void respondAndClose(HttpExchange exchange, int httpCode, byte[] response) throws IOException {
+        int contentLength = getContentLength(httpCode, response);
+        exchange.sendResponseHeaders(httpCode, contentLength);
+        exchange.getResponseBody().write(response);
+        exchange.close();
+    }
+
+    private int getContentLength(int httpCode, byte[] response) {
+        if (httpCode == HttpURLConnection.HTTP_NO_CONTENT) {
+            return -1;
+        } else {
+        return response.length;
+        }
     }
 
     private void createContextAndRegisterHandler() {
