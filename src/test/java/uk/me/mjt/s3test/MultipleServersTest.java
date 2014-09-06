@@ -1,12 +1,15 @@
 package uk.me.mjt.s3test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static uk.me.mjt.s3test.BasicTestSuperclass.inputStreamToString;
+
 import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.services.s3.*;
-import com.amazonaws.services.s3.model.*;
-import static org.junit.Assert.*;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
+import com.amazonaws.services.s3.model.S3Object;
 import org.junit.Test;
-import static uk.me.mjt.s3test.BasicTestSuperclass.inputStreamToString;
 
 public class MultipleServersTest {
     

@@ -1,9 +1,9 @@
 package uk.me.mjt.s3test;
 
-import com.amazonaws.services.s3.transfer.MultipleFileUpload;
-import com.amazonaws.services.s3.transfer.TransferManager;
 import java.io.File;
 
+import com.amazonaws.services.s3.transfer.MultipleFileUpload;
+import com.amazonaws.services.s3.transfer.TransferManager;
 import org.junit.Test;
 
 public class UploadDirectoryTest extends BasicTestSuperclass {

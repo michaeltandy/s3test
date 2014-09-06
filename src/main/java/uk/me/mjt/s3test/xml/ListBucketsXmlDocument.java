@@ -1,9 +1,9 @@
 package uk.me.mjt.s3test.xml;
 
+import java.util.Map;
+
 import org.w3c.dom.Element;
 import uk.me.mjt.s3test.Bucket;
-
-import java.util.Map;
 
 public class ListBucketsXmlDocument extends XmlDocument {
 

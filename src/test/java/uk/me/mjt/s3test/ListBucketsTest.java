@@ -1,13 +1,13 @@
 package uk.me.mjt.s3test;
 
-import com.amazonaws.services.s3.model.Bucket;
-import org.junit.Test;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import com.amazonaws.services.s3.model.Bucket;
+import org.junit.Test;
 
 public class ListBucketsTest extends BasicTestSuperclass {
     @Test

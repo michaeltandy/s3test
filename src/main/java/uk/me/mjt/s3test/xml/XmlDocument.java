@@ -1,8 +1,5 @@
 package uk.me.mjt.s3test.xml;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -13,6 +10,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public abstract class XmlDocument {
 

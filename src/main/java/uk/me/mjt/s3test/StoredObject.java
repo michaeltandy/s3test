@@ -1,8 +1,8 @@
 package uk.me.mjt.s3test;
 
+import javax.xml.bind.DatatypeConverter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import javax.xml.bind.DatatypeConverter;
 
 public class StoredObject {
 

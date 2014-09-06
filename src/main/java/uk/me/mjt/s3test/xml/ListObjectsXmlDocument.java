@@ -1,10 +1,10 @@
 package uk.me.mjt.s3test.xml;
 
+import java.util.Map;
+
 import org.w3c.dom.Element;
 import uk.me.mjt.s3test.Bucket;
 import uk.me.mjt.s3test.StoredObject;
-
-import java.util.Map;
 
 public class ListObjectsXmlDocument extends XmlDocument {
 

@@ -1,7 +1,7 @@
 package uk.me.mjt.s3test;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.amazonaws.AmazonClientException;
 import org.junit.Test;
