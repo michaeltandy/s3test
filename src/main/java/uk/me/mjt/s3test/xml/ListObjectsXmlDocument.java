@@ -25,17 +25,17 @@ public class ListObjectsXmlDocument extends XmlDocument {
 
     @Override
     public void build() {
-        Element rootElement = document.createElement("ListBucketResult");
-        document.appendChild(rootElement);
+        Element listObjectsElement = document.createElement("ListBucketResult");
+        document.appendChild(listObjectsElement);
 
-        rootElement.appendChild(createElementWithText("Name", bucket.getName()));
-        rootElement.appendChild(createElementWithText("Prefix", prefix));
-        rootElement.appendChild(createElementWithText("IsTruncated", "false"));
+        listObjectsElement.appendChild(createElementWithText("Name", bucket.getName()));
+        listObjectsElement.appendChild(createElementWithText("Prefix", prefix));
+        listObjectsElement.appendChild(createElementWithText("IsTruncated", "false"));
 
         for(Map.Entry<String, StoredObject> entry : bucket.entrySet()) {
             StoredObject storedObject = entry.getValue();
             if(nameStartsWithPrefix(storedObject.getName(), prefix)) {
-                rootElement.appendChild(createContentsElement(storedObject));
+                listObjectsElement.appendChild(createContentsElement(storedObject));
             }
         }
     }

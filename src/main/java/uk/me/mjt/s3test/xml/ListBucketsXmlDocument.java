@@ -20,13 +20,13 @@ public class ListBucketsXmlDocument extends XmlDocument {
     }
 
     public void build() {
-        Element rootElement = document.createElement("ListAllMyBucketsResult");
-        document.appendChild(rootElement);
+        Element listBucketsElement = document.createElement("ListAllMyBucketsResult");
+        document.appendChild(listBucketsElement);
 
-        rootElement.appendChild(createOwnerElement());
+        listBucketsElement.appendChild(createOwnerElement());
 
         Element bucketsElement = document.createElement("Buckets");
-        rootElement.appendChild(bucketsElement);
+        listBucketsElement.appendChild(bucketsElement);
 
         for (String bucketName : buckets.keySet()) {
             Bucket bucket = buckets.get(bucketName);

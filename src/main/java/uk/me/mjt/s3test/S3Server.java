@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpServer;
 import uk.me.mjt.s3test.xml.ErrorResponseXmlDocument;
 import uk.me.mjt.s3test.xml.ListBucketsXmlDocument;
 import uk.me.mjt.s3test.xml.ListObjectsXmlDocument;
+import uk.me.mjt.s3test.xml.XmlDocument;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -93,7 +94,7 @@ public class S3Server {
         httpServer.createContext("/", new HttpHandler() {
             public void handle(HttpExchange exchange) throws IOException {
                 System.out.println(exchange.getRequestMethod() + " " + exchange.getRequestURI());
-                switch(exchange.getRequestMethod()) {
+                switch (exchange.getRequestMethod()) {
                     case HttpMethods.GET:
                         handleGet(exchange);
                         break;
@@ -113,15 +114,15 @@ public class S3Server {
 
     private void handleGet(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
-        if(path.equals("/")) {
+        if (path.equals("/")) {
             handleListBuckets(exchange);
             return;
         }
 
         Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
-        if(bucketPatternMatcher.matches()) {
+        if (bucketPatternMatcher.matches()) {
             String bucketName = bucketPatternMatcher.group(1);
-            if(buckets.containsKey(bucketName)) {
+            if (buckets.containsKey(bucketName)) {
                 String prefix = getPrefixQueryParam(exchange.getRequestURI());
                 handleListObjects(exchange, bucketName, prefix);
                 return;
@@ -131,13 +132,13 @@ public class S3Server {
             }
         }
 
-        Matcher matcher = REQUEST_PATH_PATTERN.matcher(path);
-        if (!matcher.matches()) {
+        Matcher requestPathPatternMatcher = REQUEST_PATH_PATTERN.matcher(path);
+        if (!requestPathPatternMatcher.matches()) {
             respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
             return;
         }
-        String bucketName = matcher.group(1);
-        String keyName = matcher.group(2);
+        String bucketName = requestPathPatternMatcher.group(1);
+        String keyName = requestPathPatternMatcher.group(2);
 
         if (DOUBLE_DOT_PATTERN.matcher(keyName).matches()) {
             respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
@@ -158,14 +159,14 @@ public class S3Server {
 
     private String getPrefixQueryParam(URI requestURI) {
         String query = requestURI.getQuery();
-        if(query == null || query.isEmpty()) {
+        if (query == null || query.isEmpty()) {
             return "";
         }
 
         String[] queryParameters = query.split("&");
-        for(String queryParameter : queryParameters) {
+        for (String queryParameter : queryParameters) {
             String[] queryPair = queryParameter.split("=");
-            if(queryPair.length >= 2 && queryPair[0].equals(PREFIX_QUERY_PARAMETER_NAME)) {
+            if (queryPair.length >= 2 && queryPair[0].equals(PREFIX_QUERY_PARAMETER_NAME)) {
                 return queryPair[1];
             }
         }
@@ -173,44 +174,46 @@ public class S3Server {
     }
 
     private void handleListBuckets(HttpExchange exchange) throws IOException {
-        ListBucketsXmlDocument listBucketsXmlDocument =
+        respondWithXmlDocumentAndClose(
+                exchange,
+                HttpURLConnection.HTTP_OK,
                 new ListBucketsXmlDocument(
                         buckets,
                         S3_TEST_OWNER_ID,
                         S3_TEST_OWNER_DISPLAY_NAME
-                );
-        listBucketsXmlDocument.build();
-        addHeader(exchange, HttpHeaders.CONTENT_TYPE, "application/xml");
-        respondOkAndClose(exchange, listBucketsXmlDocument.toUtf8Bytes());
+                )
+        );
     }
 
     private void handleListObjects(HttpExchange exchange, String bucketName, String prefix) throws IOException {
-        ListObjectsXmlDocument listObjectsXmlDocument =
+        respondWithXmlDocumentAndClose(
+                exchange,
+                HttpURLConnection.HTTP_OK,
                 new ListObjectsXmlDocument(
                         buckets.get(bucketName),
                         prefix,
                         S3_TEST_OWNER_ID,
                         S3_TEST_OWNER_DISPLAY_NAME
-                );
-        listObjectsXmlDocument.build();
-        addHeader(exchange, HttpHeaders.CONTENT_TYPE, "application/xml");
-        respondOkAndClose(exchange, listObjectsXmlDocument.toUtf8Bytes());
+                )
+        );
     }
+
+
 
     private void handlePut(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
 
-        Matcher bucket = BUCKET_PATTERN.matcher(path);
-        if (bucket.matches()) {
-            String bucketName = bucket.group(1);
+        Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
+        if (bucketPatternMatcher.matches()) {
+            String bucketName = bucketPatternMatcher.group(1);
             handlePutBucket(exchange, bucketName);
             return;
         }
 
-        Matcher matcher = REQUEST_PATH_PATTERN.matcher(path);
-        if (matcher.matches()) {
-            String bucketName = matcher.group(1);
-            String keyName = matcher.group(2);
+        Matcher requestPathPatternMatcher = REQUEST_PATH_PATTERN.matcher(path);
+        if (requestPathPatternMatcher.matches()) {
+            String bucketName = requestPathPatternMatcher.group(1);
+            String keyName = requestPathPatternMatcher.group(2);
             handlePutObject(exchange, bucketName, keyName);
             return;
         }
@@ -238,7 +241,7 @@ public class S3Server {
     }
 
     private void handlePutBucket(HttpExchange exchange, String bucketName) throws IOException {
-        byte[] reqBody = readRequestBodyFully(exchange);
+        readRequestBodyFully(exchange);
 
         if (!bucketNameValid(bucketName)) {
             respondErrorAndClose(exchange, ErrorResponse.INVALID_BUCKET_NAME);
@@ -256,38 +259,37 @@ public class S3Server {
         if (bucketName == null) {
             return false;
         }
-        Matcher m1 = BUCKET_NAME_MUST_MATCH_PATTERN.matcher(bucketName);
-        Matcher m2 = BUCKET_NAME_MUST_NOT_MATCH_PATTERN.matcher(bucketName);
-        return m1.matches() && !m2.find();
+        return BUCKET_NAME_MUST_MATCH_PATTERN.matcher(bucketName).matches()
+                && !BUCKET_NAME_MUST_NOT_MATCH_PATTERN.matcher(bucketName).find();
     }
 
     private void handleDelete(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
 
-        Matcher bucket = BUCKET_PATTERN.matcher(path);
-        if (bucket.matches()) {
-            String bucketName = bucket.group(1);
+        Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
+        if (bucketPatternMatcher.matches()) {
+            String bucketName = bucketPatternMatcher.group(1);
             handleDeleteBucket(exchange,bucketName);
             return;
         }
 
-        Matcher m = REQUEST_PATH_PATTERN.matcher(path);
-        if (m.matches()) {
-            String bucketName = m.group(1);
-            String keyName = m.group(2);
-            handleDeleteObject(exchange,bucketName,keyName);
+        Matcher requestPathPatternMatcher = REQUEST_PATH_PATTERN.matcher(path);
+        if (requestPathPatternMatcher.matches()) {
+            String bucketName = requestPathPatternMatcher.group(1);
+            String keyName = requestPathPatternMatcher.group(2);
+            handleDeleteObject(exchange, bucketName, keyName);
             return;
         }
 
         respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
     }
 
-    private void handleDeleteObject(HttpExchange exchange,String bucketName,String keyName) throws IOException {
-        byte[] content = readRequestBodyFully(exchange);
+    private void handleDeleteObject(HttpExchange exchange, String bucketName, String keyName) throws IOException {
+        readRequestBodyFully(exchange);
 
         if (buckets.containsKey(bucketName)) {
-            Bucket b = buckets.get(bucketName);
-            b.remove(keyName);
+            Bucket bucket = buckets.get(bucketName);
+            bucket.remove(keyName);
         }
         respondNoContentAndClose(exchange);
     }
@@ -295,7 +297,7 @@ public class S3Server {
     private void handleDeleteBucket(HttpExchange exchange,String bucketName) throws IOException {
         if (buckets.containsKey(bucketName)) {
             Bucket bucket = buckets.get(bucketName);
-            if(bucket.isEmpty()) {
+            if (bucket.isEmpty()) {
                 respondErrorAndClose(exchange, ErrorResponse.BUCKET_NOT_EMPTY);
             } else {
                 buckets.remove(bucketName);
@@ -316,22 +318,22 @@ public class S3Server {
         exchange.getResponseHeaders().putAll(responseHeaders);
     }
 
-    private void respondFoundObjectAndClose(HttpExchange exchange, StoredObject obj) throws IOException {
-        byte[] response = obj.getContent();
+    private void respondFoundObjectAndClose(HttpExchange exchange, StoredObject storedObject) throws IOException {
+        byte[] response = storedObject.getContent();
 
-        addHeader(exchange, "ETag","\"" + obj.md5HexString() + "\"");
+        addHeader(exchange, "ETag", "\"" + storedObject.md5HexString() + "\"");
         addHeader(exchange, HttpHeaders.CONTENT_TYPE, "text/plain");
         respondOkAndClose(exchange, response);
     }
 
     private void respondErrorAndClose(HttpExchange exchange, ErrorResponse errorResponse) throws IOException {
-        addHeader(exchange, HttpHeaders.CONTENT_TYPE, "application/xml");
-        ErrorResponseXmlDocument errorResponseXmlDocument =
+        respondWithXmlDocumentAndClose(
+                exchange,
+                errorResponse.getStatusCode(),
                 new ErrorResponseXmlDocument(
                         errorResponse
-                );
-        errorResponseXmlDocument.build();
-        respondAndClose(exchange, errorResponse.getStatusCode(), errorResponseXmlDocument.toUtf8Bytes());
+                )
+        );
     }
 
     private void respondOkAndClose(HttpExchange exchange) throws IOException {
@@ -340,6 +342,12 @@ public class S3Server {
 
     private void respondOkAndClose(HttpExchange exchange, byte[] response) throws IOException {
         respondAndClose(exchange, HttpURLConnection.HTTP_OK, response);
+    }
+
+    private void respondWithXmlDocumentAndClose(HttpExchange exchange, int httpCode, XmlDocument xmlDocument) throws IOException {
+        xmlDocument.build();
+        addHeader(exchange, HttpHeaders.CONTENT_TYPE, "application/xml");
+        respondAndClose(exchange, httpCode, xmlDocument.toUtf8Bytes());
     }
 
     private void respondNoContentAndClose(HttpExchange exchange) throws IOException {
@@ -362,9 +370,9 @@ public class S3Server {
         int contentLength = Integer.parseInt(lengthHeader);
         if (contentLength > 0) {
             byte[] content = new byte[contentLength];
-            InputStream is = exchange.getRequestBody();
-            int lengthRead = is.read(content);
-            is.close();
+            InputStream inputStream = exchange.getRequestBody();
+            int lengthRead = inputStream.read(content);
+            inputStream.close();
             content = Arrays.copyOf(content, lengthRead);
             return content;
         } else {
