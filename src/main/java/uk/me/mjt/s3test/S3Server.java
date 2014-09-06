@@ -4,6 +4,7 @@ package uk.me.mjt.s3test;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import uk.me.mjt.s3test.xml.ErrorResponseXmlDocument;
 import uk.me.mjt.s3test.xml.ListBucketsXmlDocument;
 import uk.me.mjt.s3test.xml.ListObjectsXmlDocument;
 
@@ -14,7 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -180,6 +180,7 @@ public class S3Server {
                         S3_TEST_OWNER_DISPLAY_NAME
                 );
         listBucketsXmlDocument.build();
+        addHeader(exchange, HttpHeaders.CONTENT_TYPE, "application/xml");
         respondOkAndClose(exchange, listBucketsXmlDocument.toUtf8Bytes());
     }
 
@@ -192,6 +193,7 @@ public class S3Server {
                         S3_TEST_OWNER_DISPLAY_NAME
                 );
         listObjectsXmlDocument.build();
+        addHeader(exchange, HttpHeaders.CONTENT_TYPE, "application/xml");
         respondOkAndClose(exchange, listObjectsXmlDocument.toUtf8Bytes());
     }
 
@@ -324,7 +326,12 @@ public class S3Server {
 
     private void respondErrorAndClose(HttpExchange exchange, ErrorResponse errorResponse) throws IOException {
         addHeader(exchange, HttpHeaders.CONTENT_TYPE, "application/xml");
-        respondAndClose(exchange, errorResponse.getStatusCode(), errorResponse.getAsXml().getBytes(StandardCharsets.UTF_8));
+        ErrorResponseXmlDocument errorResponseXmlDocument =
+                new ErrorResponseXmlDocument(
+                        errorResponse
+                );
+        errorResponseXmlDocument.build();
+        respondAndClose(exchange, errorResponse.getStatusCode(), errorResponseXmlDocument.toUtf8Bytes());
     }
 
     private void respondOkAndClose(HttpExchange exchange) throws IOException {

@@ -24,20 +24,12 @@ public enum ErrorResponse {
         return code;
     }
 
-    /*public String getMessage() {
+    public String getMessage() {
         return message;
-    }*/
+    }
 
     public int getStatusCode() {
         return statusCode;
     }
 
-    public String getAsXml() {
-        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-            "<Error>" +
-            "<Code>" + code + "</Code>" +
-            "<Message>" + message + "</Message>" +
-            "</Error>";
-        return response;
-    }
 }
