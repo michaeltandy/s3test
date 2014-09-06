@@ -37,7 +37,7 @@ public class S3Server extends Server {
     public static final String S3_TEST_OWNER_ID = "7aab9dc7212a1061887ecb";
     public static final String S3_TEST_OWNER_DISPLAY_NAME = "S3 Test";
 
-    private final HashMap<String,Bucket> buckets = new HashMap<>();
+    private final Map<String,Bucket> buckets = new HashMap<>();
 
     public S3Server() throws IOException {
         this(null);
