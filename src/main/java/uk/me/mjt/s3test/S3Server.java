@@ -1,4 +1,3 @@
-
 package uk.me.mjt.s3test;
 
 import java.io.IOException;
