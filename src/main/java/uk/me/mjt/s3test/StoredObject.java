@@ -8,13 +8,13 @@ public class StoredObject {
 
     private final String name;
     private final byte[] content;
-    
+
     StoredObject(String name,
                  byte[] content) {
         this.name = name;
         this.content = content;
     }
-    
+
     public String getName() {
         return name;
     }
@@ -22,7 +22,7 @@ public class StoredObject {
     public byte[] getContent() {
         return content;
     }
-    
+
     public String md5HexString() {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("MD5");
@@ -32,5 +32,5 @@ public class StoredObject {
             throw new RuntimeException("This should never happen",e);
         }
     }
-    
+
 }

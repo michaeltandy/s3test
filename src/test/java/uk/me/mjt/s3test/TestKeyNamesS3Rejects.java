@@ -23,32 +23,32 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 
 public class TestKeyNamesS3Rejects {
-    
+
     public static void main(String[] args) throws Exception {
         new TestKeyNamesS3Rejects().testCombinations();
         //new TestKeyNamesS3Rejects().testDoubleDots();
-        
+
     }
-    
+
     final ArrayList<String> prefixTestResults = new ArrayList<>();
-    
+
     public void testDoubleDots() throws Exception {
         String filename = System.getProperty("user.home")+"/aws.properties";
         PropertiesCredentials credentials = new PropertiesCredentials(new File(filename));
-        
+
         AmazonS3Client client = new AmazonS3Client(credentials);
         client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
         client.setRegion(Region.getRegion(Regions.EU_WEST_1));
-        
+
         testPrefix(client,"",6);
-        
+
         Collections.sort(prefixTestResults);
         for (String s : prefixTestResults) {
             System.out.println(s);
         }
-        
+
     }
-    
+
     public void testPrefix(AmazonS3Client client, String prefix, int depth) throws UnsupportedEncodingException {
         if (testKey(client, prefix)) {
             prefixTestResults.add(prefix + " -> OK");
@@ -61,15 +61,15 @@ public class TestKeyNamesS3Rejects {
             testPrefix(client, prefix + "asdf", depth-1);
         }
     }
-    
+
     public void testCombinations() throws Exception {
         String filename = System.getProperty("user.home")+"/aws.properties";
         PropertiesCredentials credentials = new PropertiesCredentials(new File(filename));
-        
+
         AmazonS3Client client = new AmazonS3Client(credentials);
         client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
         client.setRegion(Region.getRegion(Regions.EU_WEST_1));
-        
+
         testKey(client,"asdf.txt");
         testKey(client," ");
         testKey(client,"qwer.txt?acl");
@@ -108,7 +108,7 @@ public class TestKeyNamesS3Rejects {
         testKey(client,"+");
         testKey(client,"=");
         testKey(client,"%");
-        
+
         testKey(client,"\u00a5");
         testKey(client,"\u030a");
         testKey(client,"\r");
@@ -128,7 +128,7 @@ public class TestKeyNamesS3Rejects {
         testKey(client,"\u00a0");
         testKey(client,"\u2060");
         testKey(client,"\uFEFF");
-        
+
         testKey(client,"asdf../..");
         testKey(client,"asdf/../..");
         testKey(client,"asdf/../../");
@@ -139,32 +139,32 @@ public class TestKeyNamesS3Rejects {
         testKey(client,"..asdf/asdf..");
         testKey(client,"../asdf/..");
     }
-    
+
     public boolean testKey(AmazonS3Client client, String key) throws UnsupportedEncodingException {
         String messageContents = "The key is >" +key + "< or, as bytes, " + Arrays.toString(key.getBytes());
         byte[] content = messageContents.getBytes("UTF-8");
-        
+
         boolean putSuccess;
-        
-        try {            
-            
+
+        try {
+
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentLength(content.length);
-            
+
             PutObjectRequest s3request = new PutObjectRequest("s3-test-mjt", key,new ByteArrayInputStream(content),metadata);
             PutObjectResult response = client.putObject(s3request);
-            
+
             putSuccess = true;
         } catch (AmazonS3Exception e) {
             e.printStackTrace();
-            
+
             System.out.println("Error Code: " + e.getErrorCode());
             System.out.println("Error Message: " + e.getErrorMessage());
             System.out.println("Status Code: " + e.getStatusCode());
             System.out.println("Problem during put. " + messageContents);
             putSuccess = false;
         }
-        
+
         if (putSuccess) {
             try {
                 GetObjectRequest getRequest = new GetObjectRequest("s3-test-mjt", key);
@@ -174,7 +174,7 @@ public class TestKeyNamesS3Rejects {
                 is.read(readback);
                 is.close();
                 getResponse.close();
-                
+
                 DeleteObjectRequest deleteRequest = new DeleteObjectRequest("s3-test-mjt", key);
                 client.deleteObject(deleteRequest);
 
@@ -197,5 +197,5 @@ public class TestKeyNamesS3Rejects {
             return false;
         }
     }
-    
+
 }

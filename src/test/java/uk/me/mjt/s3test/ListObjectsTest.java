@@ -45,7 +45,7 @@ public class ListObjectsTest extends BasicTestSuperclass {
         assertTrue(objectKeys.contains("file-2"));
         assertTrue(objectKeys.contains("/file/with/slashes-1.xml"));
         assertTrue(objectKeys.contains("/file/with/loads/of/slashes-3.png"));
-   }
+    }
 
     @Test
     public void testListObjectsWithPrefix() throws Exception {

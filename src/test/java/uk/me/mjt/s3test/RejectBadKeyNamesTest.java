@@ -13,7 +13,7 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 import org.junit.Test;
 
 public class RejectBadKeyNamesTest extends BasicTestSuperclass {
-    
+
     public RejectBadKeyNamesTest() {
     }
 
@@ -81,7 +81,7 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
         testShouldAllowKey("///..//");
         testShouldAllowKey("///../asdf");
     }
-    
+
     @Test
     public void testShouldRefuse() {
         testShouldRefuseKey_InvalidUri("../..");
@@ -119,7 +119,7 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
         testShouldRefuseKey_InvalidUri("//..//..");
         testShouldRefuseKey_InvalidUri("///../..");
     }
-    
+
     public void testShouldAllowKey(String key) {
         try {
             byte[] content = "qwer".getBytes();
@@ -135,7 +135,7 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
             fail("Wrongly refused key " + key);
         }
     }
-    
+
     public void testShouldRefuseKey_InvalidUri(String key) {
         try {
             byte[] content = "qwer".getBytes();
@@ -151,5 +151,5 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
             assertEquals(ErrorResponse.INVALID_URI.getCode(), e.getErrorCode());
         }
     }
-    
+
 }

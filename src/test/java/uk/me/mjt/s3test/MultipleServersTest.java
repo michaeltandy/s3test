@@ -12,16 +12,16 @@ import com.amazonaws.services.s3.model.S3Object;
 import org.junit.Test;
 
 public class MultipleServersTest {
-    
+
     public MultipleServersTest() {
     }
-    
+
     @Test
     public void testStartTwoServers() throws Exception {
         S3Server instanceA = null;
         S3Server instanceB = null;
         AmazonS3Client client = null;
-        
+
         try {
             instanceA = new S3Server();
             instanceB = new S3Server();
@@ -36,9 +36,9 @@ public class MultipleServersTest {
             S3Object response = client.getObject("bucketname", "asdf.txt");
             String content = inputStreamToString(response.getObjectContent());
             assertEquals("asdf",content);
-            
+
             assertFalse(instanceA.getAddress().equals(instanceB.getAddress()));
-            
+
         } finally {
             if (client!=null)
                 client.shutdown();
@@ -48,5 +48,5 @@ public class MultipleServersTest {
                 instanceB.stop();
         }
     }
-        
+
 }

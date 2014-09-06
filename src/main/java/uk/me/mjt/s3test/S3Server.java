@@ -26,9 +26,9 @@ public class S3Server extends Server {
     // Bucket names must follow DNS rules from http://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
     private static final Pattern BUCKET_NAME_MUST_MATCH_PATTERN = Pattern.compile("[a-z0-9\\.\\-]{3,63}");
     private static final Pattern BUCKET_NAME_MUST_NOT_MATCH_PATTERN = Pattern.compile("(^[\\.\\-])|"
-            + "([\\.\\-]$)|"
-            + "([\\.\\-]{2})|"
-            + "(^\\d+\\.\\d+\\.\\d+\\.\\d+$)");
+        + "([\\.\\-]$)|"
+        + "([\\.\\-]{2})|"
+        + "(^\\d+\\.\\d+\\.\\d+\\.\\d+$)");
 
     public static final String PREFIX_QUERY_PARAMETER = "prefix";
     public static final String S3_TEST_OWNER_ID = "7aab9dc7212a1061887ecb";
@@ -142,13 +142,13 @@ public class S3Server extends Server {
 
     private void handleListBuckets(HttpExchange exchange) throws IOException {
         respondWithXmlDocumentAndClose(
-                exchange,
-                HttpURLConnection.HTTP_OK,
-                new ListBucketsXmlDocument(
-                        buckets,
-                        S3_TEST_OWNER_ID,
-                        S3_TEST_OWNER_DISPLAY_NAME
-                )
+            exchange,
+            HttpURLConnection.HTTP_OK,
+            new ListBucketsXmlDocument(
+                buckets,
+                S3_TEST_OWNER_ID,
+                S3_TEST_OWNER_DISPLAY_NAME
+            )
         );
     }
 
@@ -212,20 +212,20 @@ public class S3Server extends Server {
 
     private boolean bucketNameValid(String bucketName) {
         return bucketName != null
-                && BUCKET_NAME_MUST_MATCH_PATTERN.matcher(bucketName).matches()
-                && !BUCKET_NAME_MUST_NOT_MATCH_PATTERN.matcher(bucketName).find();
+            && BUCKET_NAME_MUST_MATCH_PATTERN.matcher(bucketName).matches()
+            && !BUCKET_NAME_MUST_NOT_MATCH_PATTERN.matcher(bucketName).find();
     }
 
     private void respondListObjectsAndClose(HttpExchange exchange, String bucketName, String prefix) throws IOException {
         respondWithXmlDocumentAndClose(
-                exchange,
-                HttpURLConnection.HTTP_OK,
-                new ListObjectsXmlDocument(
-                        buckets.get(bucketName),
-                        prefix,
-                        S3_TEST_OWNER_ID,
-                        S3_TEST_OWNER_DISPLAY_NAME
-                )
+            exchange,
+            HttpURLConnection.HTTP_OK,
+            new ListObjectsXmlDocument(
+                buckets.get(bucketName),
+                prefix,
+                S3_TEST_OWNER_ID,
+                S3_TEST_OWNER_DISPLAY_NAME
+            )
         );
     }
 

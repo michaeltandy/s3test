@@ -133,7 +133,7 @@ public abstract class Server {
         if (httpCode == HttpURLConnection.HTTP_NO_CONTENT) {
             return -1;
         } else {
-        return response.length;
+            return response.length;
         }
     }
 
@@ -167,7 +167,7 @@ public abstract class Server {
             }
         }
         throw new IOException("Made several attempts to bind to a randomly "
-                + "chosen port and failed each time. Weird.");
+            + "chosen port and failed each time. Weird.");
     }
 
     private boolean attemptToBind(int port) throws IOException {

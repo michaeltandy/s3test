@@ -7,7 +7,7 @@ import com.amazonaws.AmazonClientException;
 import org.junit.Test;
 
 public class RejectBadBucketNamesTest extends BasicTestSuperclass {
-    
+
     @Test
     public void testShouldAccept() {
         assertTrue(bucketNameValid("doesnotexist.mjt.me.uk"));
@@ -21,7 +21,7 @@ public class RejectBadBucketNamesTest extends BasicTestSuperclass {
         assertTrue(bucketNameValid("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
         assertTrue(bucketNameValid("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
     }
-    
+
     @Test
     public void testShouldReject() {
         assertFalse(bucketNameValid(null));
@@ -60,5 +60,5 @@ public class RejectBadBucketNamesTest extends BasicTestSuperclass {
             return false;
         }
     }
-    
+
 }

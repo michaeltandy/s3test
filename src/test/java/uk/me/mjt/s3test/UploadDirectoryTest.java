@@ -11,8 +11,8 @@ public class UploadDirectoryTest extends BasicTestSuperclass {
     @Test
     public void transferDirectory() throws Exception {
         File dirToUpload = new File(UploadDirectoryTest.class.getResource("/directoryToUpload").toURI());
-        
-        TransferManager tx = null; 
+
+        TransferManager tx = null;
         try {
             tx = new TransferManager(client);
             MultipleFileUpload upload = tx.uploadDirectory("bucketname", "targetDirectory", dirToUpload, true);
@@ -20,7 +20,7 @@ public class UploadDirectoryTest extends BasicTestSuperclass {
         } finally {
             if (tx != null) tx.shutdownNow();
         }
-        
-        
+
+
     }
 }
