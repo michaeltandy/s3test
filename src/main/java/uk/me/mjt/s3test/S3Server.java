@@ -2,8 +2,6 @@
 package uk.me.mjt.s3test;
 
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 import uk.me.mjt.s3test.xml.ErrorResponseXmlDocument;
 import uk.me.mjt.s3test.xml.ListBucketsXmlDocument;
 import uk.me.mjt.s3test.xml.ListObjectsXmlDocument;
@@ -11,24 +9,17 @@ import uk.me.mjt.s3test.xml.XmlDocument;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.BindException;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class S3Server {
+public class S3Server extends Server {
     public static final int NUMBER_OF_THREADS = 3;
 
     private static final Pattern BUCKET_PATTERN = Pattern.compile("/([^/]+)/"); // Format is like "/bucketname/"
@@ -41,78 +32,23 @@ public class S3Server {
             + "([\\.\\-]$)|"
             + "([\\.\\-]{2})|"
             + "(^\\d+\\.\\d+\\.\\d+\\.\\d+$)");
-    public static final int BASE_PORT_NUMBER = 8000;
-    public static final int PORT_NUMBER_RANGE = 1000;
-    public static final String PREFIX_QUERY_PARAMETER_NAME = "prefix";
+
+    public static final String PREFIX_QUERY_PARAMETER = "prefix";
     public static final String S3_TEST_OWNER_ID = "7aab9dc7212a1061887ecb";
     public static final String S3_TEST_OWNER_DISPLAY_NAME = "S3 Test";
 
-    private final HttpServer httpServer;
     private final HashMap<String,Bucket> buckets = new HashMap<>();
-    private ExecutorService executorService = null;
-    private InetSocketAddress address;
 
     public S3Server() throws IOException {
         this(null);
     }
 
     public S3Server(InetSocketAddress address) throws IOException {
-        this.httpServer = HttpServer.create();
-        this.address = address;
-        createContext();
+        super(address, NUMBER_OF_THREADS);
     }
 
-    public void start() throws IOException {
-        executorService = Executors.newFixedThreadPool(NUMBER_OF_THREADS, new ThreadFactory() {
-            int thisServerThreadCount = 0;
-            public Thread newThread(Runnable r) {
-                return new Thread(r, "S3Server thread " + (++thisServerThreadCount));
-            }
-        });
-        httpServer.setExecutor(executorService);
-
-        if (address != null) {
-            httpServer.bind(address, 0);
-        } else {
-            bindToRandomPort();
-        }
-        httpServer.start();
-    }
-
-    public void stop() {
-        httpServer.stop(1);
-        executorService.shutdown();
-        executorService = null;
-    }
-
-    public String getAddress() {
-        return "http://" + address.getHostName() + ":" + address.getPort();
-    }
-
-    private void createContext() {
-        // create and register our handler
-        httpServer.createContext("/", new HttpHandler() {
-            public void handle(HttpExchange exchange) throws IOException {
-                System.out.println(exchange.getRequestMethod() + " " + exchange.getRequestURI());
-                switch (exchange.getRequestMethod()) {
-                    case HttpMethods.GET:
-                        handleGet(exchange);
-                        break;
-                    case HttpMethods.PUT:
-                        handlePut(exchange);
-                        break;
-                    case HttpMethods.DELETE:
-                        handleDelete(exchange);
-                        break;
-                    default:
-                        System.out.println("Don't know how to " + exchange.getRequestMethod());
-                        throw new UnsupportedOperationException("Don't know how to " + exchange.getRequestMethod());
-                }
-            }
-        });
-    }
-
-    private void handleGet(HttpExchange exchange) throws IOException {
+    @Override
+    protected void handleGet(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
         if (path.equals("/")) {
             handleListBuckets(exchange);
@@ -123,7 +59,7 @@ public class S3Server {
         if (bucketPatternMatcher.matches()) {
             String bucketName = bucketPatternMatcher.group(1);
             if (buckets.containsKey(bucketName)) {
-                String prefix = getPrefixQueryParam(exchange.getRequestURI());
+                String prefix = getQueryParamValue(exchange.getRequestURI(), PREFIX_QUERY_PARAMETER);
                 handleListObjects(exchange, bucketName, prefix);
                 return;
             } else {
@@ -157,21 +93,49 @@ public class S3Server {
         }
     }
 
-    private String getPrefixQueryParam(URI requestURI) {
-        String query = requestURI.getQuery();
-        if (query == null || query.isEmpty()) {
-            return "";
+    @Override
+    protected void handlePut(HttpExchange exchange) throws IOException {
+        String path = exchange.getRequestURI().getPath();
+
+        Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
+        if (bucketPatternMatcher.matches()) {
+            String bucketName = bucketPatternMatcher.group(1);
+            handlePutBucket(exchange, bucketName);
+            return;
         }
 
-        String[] queryParameters = query.split("&");
-        for (String queryParameter : queryParameters) {
-            String[] queryPair = queryParameter.split("=");
-            if (queryPair.length >= 2 && queryPair[0].equals(PREFIX_QUERY_PARAMETER_NAME)) {
-                return queryPair[1];
-            }
+        Matcher requestPathPatternMatcher = REQUEST_PATH_PATTERN.matcher(path);
+        if (requestPathPatternMatcher.matches()) {
+            String bucketName = requestPathPatternMatcher.group(1);
+            String keyName = requestPathPatternMatcher.group(2);
+            handlePutObject(exchange, bucketName, keyName);
+            return;
         }
-        return "";
+        respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
     }
+
+    @Override
+    protected void handleDelete(HttpExchange exchange) throws IOException {
+        String path = exchange.getRequestURI().getPath();
+
+        Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
+        if (bucketPatternMatcher.matches()) {
+            String bucketName = bucketPatternMatcher.group(1);
+            handleDeleteBucket(exchange,bucketName);
+            return;
+        }
+
+        Matcher requestPathPatternMatcher = REQUEST_PATH_PATTERN.matcher(path);
+        if (requestPathPatternMatcher.matches()) {
+            String bucketName = requestPathPatternMatcher.group(1);
+            String keyName = requestPathPatternMatcher.group(2);
+            handleDeleteObject(exchange, bucketName, keyName);
+            return;
+        }
+
+        respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
+    }
+
 
     private void handleListBuckets(HttpExchange exchange) throws IOException {
         respondWithXmlDocumentAndClose(
@@ -196,28 +160,6 @@ public class S3Server {
                         S3_TEST_OWNER_DISPLAY_NAME
                 )
         );
-    }
-
-
-
-    private void handlePut(HttpExchange exchange) throws IOException {
-        String path = exchange.getRequestURI().getPath();
-
-        Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
-        if (bucketPatternMatcher.matches()) {
-            String bucketName = bucketPatternMatcher.group(1);
-            handlePutBucket(exchange, bucketName);
-            return;
-        }
-
-        Matcher requestPathPatternMatcher = REQUEST_PATH_PATTERN.matcher(path);
-        if (requestPathPatternMatcher.matches()) {
-            String bucketName = requestPathPatternMatcher.group(1);
-            String keyName = requestPathPatternMatcher.group(2);
-            handlePutObject(exchange, bucketName, keyName);
-            return;
-        }
-        respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
     }
 
     private void handlePutObject(HttpExchange exchange, String bucketName, String keyName) throws IOException {
@@ -261,27 +203,6 @@ public class S3Server {
         }
         return BUCKET_NAME_MUST_MATCH_PATTERN.matcher(bucketName).matches()
                 && !BUCKET_NAME_MUST_NOT_MATCH_PATTERN.matcher(bucketName).find();
-    }
-
-    private void handleDelete(HttpExchange exchange) throws IOException {
-        String path = exchange.getRequestURI().getPath();
-
-        Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
-        if (bucketPatternMatcher.matches()) {
-            String bucketName = bucketPatternMatcher.group(1);
-            handleDeleteBucket(exchange,bucketName);
-            return;
-        }
-
-        Matcher requestPathPatternMatcher = REQUEST_PATH_PATTERN.matcher(path);
-        if (requestPathPatternMatcher.matches()) {
-            String bucketName = requestPathPatternMatcher.group(1);
-            String keyName = requestPathPatternMatcher.group(2);
-            handleDeleteObject(exchange, bucketName, keyName);
-            return;
-        }
-
-        respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
     }
 
     private void handleDeleteObject(HttpExchange exchange, String bucketName, String keyName) throws IOException {
@@ -379,27 +300,4 @@ public class S3Server {
             return new byte[0];
         }
     }
-
-    private void bindToRandomPort() throws IOException {
-        Random random = new Random();
-        for (int i = 0 ; i < 20 ; i++) {
-            if (attemptToBind(BASE_PORT_NUMBER + random.nextInt(PORT_NUMBER_RANGE))) {
-                return;
-            }
-        }
-        throw new IOException("Made several attempts to bind to a randomly "
-                + "chosen port and failed each time. Weird.");
-    }
-
-    private boolean attemptToBind(int port) throws IOException {
-        try {
-            InetSocketAddress binding = new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
-            httpServer.bind(binding, 0);
-            address = binding;
-            return true;
-        } catch (BindException e) {
-            return false;
-        }
-    }
-
 }
