@@ -23,43 +23,28 @@ public class ListBucketsXmlDocument extends XmlDocument {
         Element rootElement = document.createElement("ListAllMyBucketsResult");
         document.appendChild(rootElement);
 
-        Element owner = getOwnerElement();
-        rootElement.appendChild(owner);
+        rootElement.appendChild(createOwnerElement());
 
         Element bucketsElement = document.createElement("Buckets");
         rootElement.appendChild(bucketsElement);
 
         for (String bucketName : buckets.keySet()) {
             Bucket bucket = buckets.get(bucketName);
-            Element bucketElement = getBucketElement(bucketName, bucket);
-            bucketsElement.appendChild(bucketElement);
+            bucketsElement.appendChild(createBucketElement(bucketName, bucket));
         }
     }
 
-    private Element getOwnerElement() {
+    private Element createOwnerElement() {
         Element owner = document.createElement("Owner");
-
-        Element id = document.createElement("ID");
-        id.appendChild(document.createTextNode(ownerId));
-        owner.appendChild(id);
-
-        Element displayName = document.createElement("DisplayName");
-        displayName.appendChild(document.createTextNode(ownerDisplayName));
-        owner.appendChild(displayName);
-
+        owner.appendChild(createElementWithText("ID", ownerId));
+        owner.appendChild(createElementWithText("DisplayName", ownerDisplayName));
         return owner;
     }
 
-    private Element getBucketElement(String bucketName, Bucket bucket) {
+    private Element createBucketElement(String bucketName, Bucket bucket) {
         Element bucketElement = document.createElement("Bucket");
-
-        Element name = document.createElement("Name");
-        name.appendChild(document.createTextNode(bucketName));
-        bucketElement.appendChild(name);
-
-        Element creationDate = document.createElement("CreationDate");
-        creationDate.appendChild(document.createTextNode(bucket.getCreationDateString()));
-        bucketElement.appendChild(creationDate);
+        bucketElement.appendChild(createElementWithText("Name", bucketName));
+        bucketElement.appendChild(createElementWithText("CreationDate", bucket.getCreationDateString()));
         return bucketElement;
     }
 

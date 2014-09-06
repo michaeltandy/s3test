@@ -225,7 +225,7 @@ public class S3Server {
 
         if (buckets.containsKey(bucketName)) {
             Bucket bucket = buckets.get(bucketName);
-            StoredObject storedObject = new StoredObject(content);
+            StoredObject storedObject = new StoredObject(keyName, content);
             bucket.put(keyName, storedObject);
             addHeader(exchange, HttpHeaders.E_TAG, "\"" + storedObject.md5HexString() + "\"");
 

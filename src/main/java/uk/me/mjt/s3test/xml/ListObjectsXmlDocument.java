@@ -4,6 +4,8 @@ import org.w3c.dom.Element;
 import uk.me.mjt.s3test.Bucket;
 import uk.me.mjt.s3test.StoredObject;
 
+import java.util.Map;
+
 public class ListObjectsXmlDocument extends XmlDocument {
 
     private Bucket bucket;
@@ -26,73 +28,42 @@ public class ListObjectsXmlDocument extends XmlDocument {
         Element rootElement = document.createElement("ListBucketResult");
         document.appendChild(rootElement);
 
-        Element name = document.createElement("Name");
-        name.appendChild(document.createTextNode(bucket.getName()));
-        rootElement.appendChild(name);
+        rootElement.appendChild(createElementWithText("Name", bucket.getName()));
+        rootElement.appendChild(createElementWithText("Prefix", prefix));
+        rootElement.appendChild(createElementWithText("IsTruncated", "false"));
 
-        Element prefixElement = document.createElement("Prefix");
-        prefixElement.appendChild(document.createTextNode(prefix));
-        rootElement.appendChild(prefixElement);
-
-        Element isTruncated = document.createElement("IsTruncated");
-        isTruncated.appendChild(document.createTextNode("false"));
-        rootElement.appendChild(isTruncated);
-
-        for(String objectName : bucket.keySet()) {
-            if(objectNameHasPrefix(prefix, objectName)) {
-                StoredObject storedObject = bucket.get(objectName);
-                Element contentsElement = getContentsElement(objectName, storedObject);
-                rootElement.appendChild(contentsElement);
+        for(Map.Entry<String, StoredObject> entry : bucket.entrySet()) {
+            StoredObject storedObject = entry.getValue();
+            if(nameStartsWithPrefix(storedObject.getName(), prefix)) {
+                rootElement.appendChild(createContentsElement(storedObject));
             }
         }
     }
 
-    private Element getContentsElement(String objectName, StoredObject storedObject) {
+    private Element createContentsElement(StoredObject storedObject) {
         Element contents = document.createElement("Contents");
-
-        Element key = document.createElement("Key");
-        key.appendChild(document.createTextNode(objectName));
-        contents.appendChild(key);
-
-        Element eTag = document.createElement("ETag");
-        eTag.appendChild(document.createTextNode(storedObject.md5HexString()));
-        contents.appendChild(eTag);
-
-        Element size = document.createElement("Size");
-        size.appendChild(document.createTextNode(Integer.toString(storedObject.getContent().length)));
-        contents.appendChild(size);
-
-        Element ownerElement = getOwnerElement();
-        contents.appendChild(ownerElement);
-
-        Element storageClass = document.createElement("StorageClass");
-        storageClass.appendChild(document.createTextNode("STANDARD"));
-        contents.appendChild(storageClass);
-
+        contents.appendChild(createElementWithText("Key", storedObject.getName()));
+        contents.appendChild(createElementWithText("ETag", storedObject.md5HexString()));
+        contents.appendChild(createElementWithText("Size", Integer.toString(storedObject.getContent().length)));
+        contents.appendChild(createOwnerElement());
+        contents.appendChild(createElementWithText("StorageClass", "STANDARD"));
         return contents;
     }
 
-    private Element getOwnerElement() {
-        Element owner = document.createElement("Owner");
-
-        Element id = document.createElement("ID");
-        id.appendChild(document.createTextNode(ownerId));
-        owner.appendChild(id);
-
-        Element displayName = document.createElement("DisplayName");
-        displayName.appendChild(document.createTextNode(ownerDisplayName));
-        owner.appendChild(displayName);
-
-        return owner;
+    private Element createOwnerElement() {
+        Element ownerElement = document.createElement("Owner");
+        ownerElement.appendChild(createElementWithText("ID", ownerId));
+        ownerElement.appendChild(createElementWithText("DisplayName", ownerDisplayName));
+        return ownerElement;
     }
 
-    private boolean objectNameHasPrefix(String prefix, String objectName) {
+    private boolean nameStartsWithPrefix(String name, String prefix) {
         if(prefix.isEmpty()) {
             return true;
         }
-        if(objectName.startsWith("/")) {
-            objectName = objectName.substring(1);
+        if(name.startsWith("/")) {
+            name = name.substring(1);
         }
-        return objectName.startsWith(prefix);
+        return name.startsWith(prefix);
     }
 }

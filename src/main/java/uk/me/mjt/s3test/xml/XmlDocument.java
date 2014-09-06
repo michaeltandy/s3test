@@ -1,6 +1,7 @@
 package uk.me.mjt.s3test.xml;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -31,6 +32,12 @@ public abstract class XmlDocument {
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
         return documentBuilder.newDocument();
+    }
+
+    public Element createElementWithText(String name, String text) {
+        Element element = document.createElement(name);
+        element.appendChild(document.createTextNode(text));
+        return element;
     }
 
     public byte[] toUtf8Bytes() {
