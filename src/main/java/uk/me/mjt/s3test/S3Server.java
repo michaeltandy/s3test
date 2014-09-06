@@ -8,13 +8,9 @@ import uk.me.mjt.s3test.xml.ListObjectsXmlDocument;
 import uk.me.mjt.s3test.xml.XmlDocument;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,14 +54,7 @@ public class S3Server extends Server {
         Matcher bucketPatternMatcher = BUCKET_PATTERN.matcher(path);
         if (bucketPatternMatcher.matches()) {
             String bucketName = bucketPatternMatcher.group(1);
-            if (buckets.containsKey(bucketName)) {
-                String prefix = getQueryParamValue(exchange.getRequestURI(), PREFIX_QUERY_PARAMETER);
-                handleListObjects(exchange, bucketName, prefix);
-                return;
-            } else {
-                respondErrorAndClose(exchange, ErrorResponse.NO_SUCH_BUCKET);
-                return;
-            }
+            handleListObjects(exchange, bucketName);
         }
 
         Matcher requestPathPatternMatcher = REQUEST_PATH_PATTERN.matcher(path);
@@ -81,16 +70,7 @@ public class S3Server extends Server {
             return;
         }
 
-        if (buckets.containsKey(bucketName)) {
-            Bucket bucket = buckets.get(bucketName);
-            if (bucket.containsKey(keyName)) {
-                respondFoundObjectAndClose(exchange, bucket.get(keyName));
-            } else {
-                respondErrorAndClose(exchange, ErrorResponse.NO_SUCH_KEY);
-            }
-        } else {
-            respondErrorAndClose(exchange, ErrorResponse.NO_SUCH_BUCKET);
-        }
+        handleGetObject(exchange, bucketName, keyName);
     }
 
     @Override
@@ -136,6 +116,28 @@ public class S3Server extends Server {
         respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
     }
 
+    private void handleGetObject(HttpExchange exchange, String bucketName, String keyName) throws IOException {
+        if (buckets.containsKey(bucketName)) {
+            Bucket bucket = buckets.get(bucketName);
+            if (bucket.containsKey(keyName)) {
+                respondGetObjectAndClose(exchange, bucket.get(keyName));
+            } else {
+                respondErrorAndClose(exchange, ErrorResponse.NO_SUCH_KEY);
+            }
+        } else {
+            respondErrorAndClose(exchange, ErrorResponse.NO_SUCH_BUCKET);
+        }
+    }
+
+    private void handleListObjects(HttpExchange exchange, String bucketName) throws IOException {
+        if (buckets.containsKey(bucketName)) {
+            String prefix = getQueryParamValue(exchange.getRequestURI(), PREFIX_QUERY_PARAMETER);
+            respondListObjectsAndClose(exchange, bucketName, prefix);
+        } else {
+            respondErrorAndClose(exchange, ErrorResponse.NO_SUCH_BUCKET);
+        }
+    }
+
 
     private void handleListBuckets(HttpExchange exchange) throws IOException {
         respondWithXmlDocumentAndClose(
@@ -143,19 +145,6 @@ public class S3Server extends Server {
                 HttpURLConnection.HTTP_OK,
                 new ListBucketsXmlDocument(
                         buckets,
-                        S3_TEST_OWNER_ID,
-                        S3_TEST_OWNER_DISPLAY_NAME
-                )
-        );
-    }
-
-    private void handleListObjects(HttpExchange exchange, String bucketName, String prefix) throws IOException {
-        respondWithXmlDocumentAndClose(
-                exchange,
-                HttpURLConnection.HTTP_OK,
-                new ListObjectsXmlDocument(
-                        buckets.get(bucketName),
-                        prefix,
                         S3_TEST_OWNER_ID,
                         S3_TEST_OWNER_DISPLAY_NAME
                 )
@@ -197,14 +186,6 @@ public class S3Server extends Server {
         }
     }
 
-    static boolean bucketNameValid(String bucketName) {
-        if (bucketName == null) {
-            return false;
-        }
-        return BUCKET_NAME_MUST_MATCH_PATTERN.matcher(bucketName).matches()
-                && !BUCKET_NAME_MUST_NOT_MATCH_PATTERN.matcher(bucketName).find();
-    }
-
     private void handleDeleteObject(HttpExchange exchange, String bucketName, String keyName) throws IOException {
         readRequestBodyFully(exchange);
 
@@ -229,17 +210,26 @@ public class S3Server extends Server {
         }
     }
 
-    private void addHeader(HttpExchange exchange, String name, String value) {
-        // RFC 2616 says HTTP headers are case-insensitive - but the
-        // Amazon S3 client will crash if ETag has a different
-        // capitalisation. And this HttpServer normalises the names
-        // of headers using "ETag"->"Etag" if you use put, add or
-        // set. But not if you use 'putAll' so that's what I use.
-        Map<String, List<String>> responseHeaders = Collections.singletonMap(name, Collections.singletonList(value));
-        exchange.getResponseHeaders().putAll(responseHeaders);
+    private void respondListObjectsAndClose(HttpExchange exchange, String bucketName, String prefix) throws IOException {
+        respondWithXmlDocumentAndClose(
+                exchange,
+                HttpURLConnection.HTTP_OK,
+                new ListObjectsXmlDocument(
+                        buckets.get(bucketName),
+                        prefix,
+                        S3_TEST_OWNER_ID,
+                        S3_TEST_OWNER_DISPLAY_NAME
+                )
+        );
     }
 
-    private void respondFoundObjectAndClose(HttpExchange exchange, StoredObject storedObject) throws IOException {
+    private boolean bucketNameValid(String bucketName) {
+        return bucketName != null
+                && BUCKET_NAME_MUST_MATCH_PATTERN.matcher(bucketName).matches()
+                && !BUCKET_NAME_MUST_NOT_MATCH_PATTERN.matcher(bucketName).find();
+    }
+
+    private void respondGetObjectAndClose(HttpExchange exchange, StoredObject storedObject) throws IOException {
         byte[] response = storedObject.getContent();
 
         addHeader(exchange, "ETag", "\"" + storedObject.md5HexString() + "\"");
@@ -280,24 +270,5 @@ public class S3Server extends Server {
         exchange.sendResponseHeaders(httpCode, response.length);
         exchange.getResponseBody().write(response);
         exchange.close();
-    }
-
-    private byte[] readRequestBodyFully(HttpExchange exchange) throws IOException {
-        // FIXME missing header, non-integer, negative, larger-than-integer, more data than content length, multipart etc.
-        String lengthHeader = exchange.getRequestHeaders().getFirst(HttpHeaders.CONTENT_LENGTH);
-        if (lengthHeader == null) {
-            lengthHeader= "0";
-        }
-        int contentLength = Integer.parseInt(lengthHeader);
-        if (contentLength > 0) {
-            byte[] content = new byte[contentLength];
-            InputStream inputStream = exchange.getRequestBody();
-            int lengthRead = inputStream.read(content);
-            inputStream.close();
-            content = Arrays.copyOf(content, lengthRead);
-            return content;
-        } else {
-            return new byte[0];
-        }
     }
 }

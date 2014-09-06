@@ -5,11 +5,12 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -83,6 +84,34 @@ public abstract class Server {
         return "";
     }
 
+    protected byte[] readRequestBodyFully(HttpExchange exchange) throws IOException {
+        // FIXME missing header, non-integer, negative, larger-than-integer, more data than content length, multipart etc.
+        String lengthHeader = exchange.getRequestHeaders().getFirst(HttpHeaders.CONTENT_LENGTH);
+        if (lengthHeader == null) {
+            lengthHeader= "0";
+        }
+        int contentLength = Integer.parseInt(lengthHeader);
+        if (contentLength > 0) {
+            byte[] content = new byte[contentLength];
+            InputStream inputStream = exchange.getRequestBody();
+            int lengthRead = inputStream.read(content);
+            inputStream.close();
+            content = Arrays.copyOf(content, lengthRead);
+            return content;
+        } else {
+            return new byte[0];
+        }
+    }
+
+    protected void addHeader(HttpExchange exchange, String name, String value) {
+        // RFC 2616 says HTTP headers are case-insensitive - but the
+        // Amazon S3 client will crash if ETag has a different
+        // capitalisation. And this HttpServer normalises the names
+        // of headers using "ETag"->"Etag" if you use put, add or
+        // set. But not if you use 'putAll' so that's what I use.
+        Map<String, List<String>> responseHeaders = Collections.singletonMap(name, Collections.singletonList(value));
+        exchange.getResponseHeaders().putAll(responseHeaders);
+    }
 
     private void createContextAndRegisterHandler() {
         httpServer.createContext("/", new HttpHandler() {
