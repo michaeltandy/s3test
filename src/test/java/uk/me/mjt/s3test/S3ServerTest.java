@@ -7,10 +7,6 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-/**
- *
- * @author mtandy
- */
 public class S3ServerTest extends BasicTestSuperclass {
     
     public S3ServerTest() {

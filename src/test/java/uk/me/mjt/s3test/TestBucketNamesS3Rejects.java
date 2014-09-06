@@ -9,11 +9,6 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 
-/**
- * See BucketNameUtils.isValidV2BucketName
- * 
- * @author mtandy
- */
 public class TestBucketNamesS3Rejects {
     
     public static void main(String[] args) throws Exception {

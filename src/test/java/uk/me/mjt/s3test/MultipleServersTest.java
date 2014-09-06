@@ -8,10 +8,6 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import static uk.me.mjt.s3test.BasicTestSuperclass.inputStreamToString;
 
-/**
- *
- * @author mtandy
- */
 public class MultipleServersTest {
     
     public MultipleServersTest() {

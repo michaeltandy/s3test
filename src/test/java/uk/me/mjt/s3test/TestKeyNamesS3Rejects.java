@@ -21,10 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
-/**
- *
- * @author mtandy
- */
 public class TestKeyNamesS3Rejects {
     
     public static void main(String[] args) throws Exception {

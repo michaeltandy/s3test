@@ -4,10 +4,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import javax.xml.bind.DatatypeConverter;
 
-/**
- *
- * @author mtandy
- */
 public class StoredObject {
 
     private final String name;
