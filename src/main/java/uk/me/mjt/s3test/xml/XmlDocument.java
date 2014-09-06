@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 
 public abstract class XmlDocument {
 
-    protected Document document;
+    protected final Document document;
 
     public XmlDocument() {
         try {

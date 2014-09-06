@@ -14,7 +14,9 @@ public enum ErrorResponse {
     private final String message;
     private final int statusCode;
 
-    ErrorResponse(String code, String message, int statusCode) {
+    private ErrorResponse(String code,
+                          String message,
+                          int statusCode) {
         this.code = code;
         this.message = message;
         this.statusCode = statusCode;

@@ -8,8 +8,8 @@ import java.util.Map;
 
 public class ListObjectsXmlDocument extends XmlDocument {
 
-    private Bucket bucket;
-    private String prefix;
+    private final Bucket bucket;
+    private final String prefix;
     private final String ownerId;
     private final String ownerDisplayName;
 
