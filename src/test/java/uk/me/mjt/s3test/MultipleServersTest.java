@@ -1,28 +1,27 @@
 package uk.me.mjt.s3test;
 
-import com.amazonaws.auth.AnonymousAWSCredentials;
-import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.services.s3.*;
-import com.amazonaws.services.s3.model.*;
-import static org.junit.Assert.*;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static uk.me.mjt.s3test.BasicTestSuperclass.inputStreamToString;
 
-/**
- *
- * @author mtandy
- */
+import com.amazonaws.auth.AnonymousAWSCredentials;
+import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
+import com.amazonaws.services.s3.model.S3Object;
+import org.junit.Test;
+
 public class MultipleServersTest {
-    
+
     public MultipleServersTest() {
     }
-    
+
     @Test
     public void testStartTwoServers() throws Exception {
         S3Server instanceA = null;
         S3Server instanceB = null;
         AmazonS3Client client = null;
-        
+
         try {
             instanceA = new S3Server();
             instanceB = new S3Server();
@@ -37,9 +36,9 @@ public class MultipleServersTest {
             S3Object response = client.getObject("bucketname", "asdf.txt");
             String content = inputStreamToString(response.getObjectContent());
             assertEquals("asdf",content);
-            
+
             assertFalse(instanceA.getAddress().equals(instanceB.getAddress()));
-            
+
         } finally {
             if (client!=null)
                 client.shutdown();
@@ -49,5 +48,5 @@ public class MultipleServersTest {
                 instanceB.stop();
         }
     }
-        
+
 }

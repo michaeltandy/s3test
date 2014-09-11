@@ -1,34 +1,30 @@
 package uk.me.mjt.s3test;
 
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+
 import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import java.io.File;
-import java.io.UnsupportedEncodingException;
 
-/**
- * See BucketNameUtils.isValidV2BucketName
- * 
- * @author mtandy
- */
 public class TestBucketNamesS3Rejects {
-    
+
     public static void main(String[] args) throws Exception {
         new TestBucketNamesS3Rejects().testCombinations();
     }
-    
-        
+
+
     public void testCombinations() throws Exception {
         String filename = System.getProperty("user.home")+"/aws.properties";
         PropertiesCredentials credentials = new PropertiesCredentials(new File(filename));
-        
+
         AmazonS3Client client = new AmazonS3Client(credentials);
         client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
         client.setRegion(Region.getRegion(Regions.EU_WEST_1));
-        
+
         testBucketName(client,"doesnotrxist.mjt.me.uk");
         testBucketName(client,"name-with-hyphens.mjt.me.uk");
         testBucketName(client,"name_underscore.mjt.me.uk");
@@ -69,11 +65,11 @@ public class TestBucketNamesS3Rejects {
         testBucketName(client,"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         testBucketName(client,"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     }
-    
+
     public boolean testBucketName(AmazonS3Client client, String key) throws UnsupportedEncodingException {
         boolean success;
-        
-        try {            
+
+        try {
             com.amazonaws.services.s3.model.Bucket b = client.createBucket(key,com.amazonaws.services.s3.model.Region.EU_Ireland);
             System.out.println("OK/Success " + key);
             success = true;
@@ -93,12 +89,12 @@ public class TestBucketNamesS3Rejects {
             }
             success = false;
         }
-        
+
         if (success) {
             try {
                 client.deleteBucket(key);
                 return true;
-                
+
             } catch (AmazonS3Exception e) {
                 System.out.println("Problem cleaning up? " + key);
                 return false;
@@ -107,5 +103,5 @@ public class TestBucketNamesS3Rejects {
             return false;
         }
     }
-    
+
 }

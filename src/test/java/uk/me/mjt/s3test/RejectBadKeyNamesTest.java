@@ -1,18 +1,19 @@
 package uk.me.mjt.s3test;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import java.io.ByteArrayInputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
+
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import org.junit.Test;
 
 public class RejectBadKeyNamesTest extends BasicTestSuperclass {
-    
+
     public RejectBadKeyNamesTest() {
     }
 
@@ -80,7 +81,7 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
         testShouldAllowKey("///..//");
         testShouldAllowKey("///../asdf");
     }
-    
+
     @Test
     public void testShouldRefuse() {
         testShouldRefuseKey_InvalidUri("../..");
@@ -118,7 +119,7 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
         testShouldRefuseKey_InvalidUri("//..//..");
         testShouldRefuseKey_InvalidUri("///../..");
     }
-    
+
     public void testShouldAllowKey(String key) {
         try {
             byte[] content = "qwer".getBytes();
@@ -134,7 +135,7 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
             fail("Wrongly refused key " + key);
         }
     }
-    
+
     public void testShouldRefuseKey_InvalidUri(String key) {
         try {
             byte[] content = "qwer".getBytes();
@@ -150,5 +151,5 @@ public class RejectBadKeyNamesTest extends BasicTestSuperclass {
             assertEquals(ErrorResponse.INVALID_URI.getCode(), e.getErrorCode());
         }
     }
-    
+
 }

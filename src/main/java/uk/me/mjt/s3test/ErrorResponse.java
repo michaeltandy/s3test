@@ -14,7 +14,9 @@ public enum ErrorResponse {
     private final String message;
     private final int statusCode;
 
-    ErrorResponse(String code, String message, int statusCode) {
+    private ErrorResponse(String code,
+                          String message,
+                          int statusCode) {
         this.code = code;
         this.message = message;
         this.statusCode = statusCode;
@@ -24,20 +26,12 @@ public enum ErrorResponse {
         return code;
     }
 
-    /*public String getMessage() {
+    public String getMessage() {
         return message;
-    }*/
+    }
 
     public int getStatusCode() {
         return statusCode;
     }
 
-    public String getAsXml() {
-        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-            "<Error>" +
-            "<Code>" + code + "</Code>" +
-            "<Message>" + message + "</Message>" +
-            "</Error>";
-        return response;
-    }
 }

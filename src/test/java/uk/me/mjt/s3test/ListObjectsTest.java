@@ -1,18 +1,18 @@
 package uk.me.mjt.s3test;
 
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.junit.Test;
 
 public class ListObjectsTest extends BasicTestSuperclass {
 
@@ -45,7 +45,7 @@ public class ListObjectsTest extends BasicTestSuperclass {
         assertTrue(objectKeys.contains("file-2"));
         assertTrue(objectKeys.contains("/file/with/slashes-1.xml"));
         assertTrue(objectKeys.contains("/file/with/loads/of/slashes-3.png"));
-   }
+    }
 
     @Test
     public void testListObjectsWithPrefix() throws Exception {
