@@ -1,24 +1,19 @@
 package uk.me.mjt.s3test;
 
+import com.sun.net.httpserver.*;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.BindException;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.net.*;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 
 public abstract class Server {
 
@@ -27,16 +22,43 @@ public abstract class Server {
 
     private InetSocketAddress address;
     private final int numberOfThreads;
+    private HTTPS https;
 
     private final HttpServer httpServer;
     private ExecutorService executorService = null;
 
-    public Server(InetSocketAddress address,
-                  int numberOfThreads) throws IOException {
+    public Server(InetSocketAddress address, int numberOfThreads, HTTPS https
+    ) throws IOException {
         this.address = address;
         this.numberOfThreads = numberOfThreads;
-        this.httpServer = HttpServer.create();
+        this.https = https;
+        this.httpServer = createHttpServer(https);
         createContextAndRegisterHandler();
+    }
+
+    private HttpServer createHttpServer(HTTPS https) throws IOException {
+        if (https.equals(HTTPS.ENABLED)) {
+            try {
+                KeyStore ks = KeyStore.getInstance("JKS");
+                ks.load(this.getClass().getResourceAsStream("/keystore.jks"), "password".toCharArray());
+                KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+                kmf.init(ks, "password".toCharArray());
+
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+                tmf.init(ks);
+
+                SSLContext sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+                HttpsServer httpsServer = HttpsServer.create();
+                httpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
+                return httpsServer;
+            } catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | UnrecoverableKeyException
+                | KeyManagementException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return HttpServer.create();
+        }
     }
 
     protected abstract void handleGet(HttpExchange httpExchange) throws IOException;
@@ -70,7 +92,13 @@ public abstract class Server {
     }
 
     public String getAddress() {
-        return "http://" + address.getHostName() + ":" + address.getPort();
+        String protocol;
+        if (https.equals(HTTPS.ENABLED)) {
+            protocol = "https://";
+        } else {
+            protocol = "http://";
+        }
+        return protocol + address.getHostName() + ":" + address.getPort();
     }
 
     public String getQueryParamValue(URI requestURI, String name) {

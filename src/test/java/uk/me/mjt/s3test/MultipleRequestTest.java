@@ -9,24 +9,28 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import javax.xml.bind.DatatypeConverter;
 
 public class MultipleRequestTest {
-    
+
     private static final int S3_SERVER_PORT = 27903;
-    
+    private static final int S3_SERVER_PORT_HTTPS = 27904;
+
     private static final String BUCKET = "application-bucket";
     private static final String KEY = "solutions-folder";
 
     private static S3Server s3Server;
+    private static S3Server s3ServerHttps;
     private static AmazonS3Client amazonS3;
+    private static AmazonS3Client amazonS3Https;
 
     @BeforeClass
     public static void setUpTestCase() throws Exception {
         setUpS3Server();
+        setUpS3ServerHttps();
     }
 
     @AfterClass
@@ -42,7 +46,7 @@ public class MultipleRequestTest {
         //Client: com.amazonaws.AmazonClientException: Unable to verify integrity of data upload.  Client calculated content hash (contentMD5: DXWKRj0pTt3pEBfDvwwg8A== in base 64) didn't match hash (etag: 9204D1FF963B860911C10E4EAEF7CD42 in hex) calculated by Amazon S3.  You may need to delete the data stored in Amazon S3. (metadata.contentMD5: null, md5DigestStream: com.amazonaws.services.s3.internal.MD5DigestCalculatingInputStream@77d680e6, bucketName: buckett, key: key)
 
         byte[] byteContent = DatatypeConverter.parseBase64Binary(
-                "LS0tLS1CRUdJTiBDTVMtLS0tLQ0KTUlBR0NTcUdTSWIzRFFFSEE2Q0FNSUFDQVFJeE1LSXVB"
+            "LS0tLS1CRUdJTiBDTVMtLS0tLQ0KTUlBR0NTcUdTSWIzRFFFSEE2Q0FNSUFDQVFJeE1LSXVB"
                 + "Z0VFTUFJRUFEQUxCZ2xnaGtnQlpRTUVBUVVFR0ZsQw0KWWJOdVpxTG5oSWkzbVRsZm9Dem05bFpmWCtuOHN6Q0FCZ2txaGtpRzl3MEJ"
                 + "Cd0V3SFFZSllJWklBV1VEQkFFQw0KQkJEREZCdDJ0dDNQT2ZMNXgybHduUzJab0lBRWdnUG9yaXFKMmNKMzJVWVFDWjkwSlRVRTByWH"
                 + "paVFhSNFp5cg0KYVBWZmFvRUEzeFoxZERnUDRBY1BCL1gzT2l0c3JBeU5nVkJZUnNlS28rSE9JUVY3VkFEazlzaWVWbWdSRnI4SQ0Ka"
@@ -124,15 +128,32 @@ public class MultipleRequestTest {
                 )
             );
 
+            amazonS3Https.putObject(
+                new PutObjectRequest(
+                    BUCKET,
+                    KEY,
+                    new ByteArrayInputStream(byteContent),
+                    new ObjectMetadata()
+                )
+            );
+
         }
     }
 
     private static void setUpS3Server() throws IOException {
-        s3Server = new S3Server(new InetSocketAddress(S3_SERVER_PORT));
+        s3Server = new S3Server(new InetSocketAddress(S3_SERVER_PORT), HTTPS.DISABLED);
         s3Server.start();
 
         amazonS3 = getAmazonS3Client(s3Server);
         amazonS3.createBucket(BUCKET);
+    }
+
+    private static void setUpS3ServerHttps() throws IOException {
+        s3ServerHttps = new S3Server(new InetSocketAddress(S3_SERVER_PORT_HTTPS), HTTPS.ENABLED);
+        s3ServerHttps.start();
+
+        amazonS3Https = getAmazonS3Client(s3ServerHttps);
+        amazonS3Https.createBucket(BUCKET);
     }
 
     public static AmazonS3Client getAmazonS3Client(S3Server s3Server) {

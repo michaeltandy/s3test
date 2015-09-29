@@ -1,5 +1,11 @@
 package uk.me.mjt.s3test;
 
+import com.sun.net.httpserver.HttpExchange;
+import uk.me.mjt.s3test.xml.ErrorResponseXmlDocument;
+import uk.me.mjt.s3test.xml.ListBucketsXmlDocument;
+import uk.me.mjt.s3test.xml.ListObjectsXmlDocument;
+import uk.me.mjt.s3test.xml.XmlDocument;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
@@ -7,12 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.sun.net.httpserver.HttpExchange;
-import uk.me.mjt.s3test.xml.ErrorResponseXmlDocument;
-import uk.me.mjt.s3test.xml.ListBucketsXmlDocument;
-import uk.me.mjt.s3test.xml.ListObjectsXmlDocument;
-import uk.me.mjt.s3test.xml.XmlDocument;
 
 public class S3Server extends Server {
 
@@ -36,11 +36,11 @@ public class S3Server extends Server {
     private final Map<String, Bucket> buckets = new HashMap<>();
 
     public S3Server() throws IOException {
-        this(null);
+        this(null, HTTPS.DISABLED);
     }
 
-    public S3Server(InetSocketAddress address) throws IOException {
-        super(address, NUMBER_OF_THREADS);
+    public S3Server(InetSocketAddress address, HTTPS https) throws IOException {
+        super(address, NUMBER_OF_THREADS, https);
     }
 
     @Override
