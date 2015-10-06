@@ -1,14 +1,23 @@
 package uk.me.mjt.s3test;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsServer;
 import uk.me.mjt.s3test.xml.ErrorResponseXmlDocument;
 import uk.me.mjt.s3test.xml.ListBucketsXmlDocument;
 import uk.me.mjt.s3test.xml.ListObjectsXmlDocument;
 import uk.me.mjt.s3test.xml.XmlDocument;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -34,14 +43,58 @@ public class S3Server extends Server {
     public static final String S3_TEST_OWNER_DISPLAY_NAME = "S3 Test";
 
     private final Map<String, Bucket> buckets = new HashMap<>();
+    private final boolean isHttps;
 
-    public S3Server() throws IOException {
-        this(null, HTTPS.DISABLED);
+    private S3Server(InetSocketAddress address) throws IOException {
+        super(address, NUMBER_OF_THREADS, HttpServer.create());
+        this.isHttps = false;
     }
 
-    public S3Server(InetSocketAddress address, HTTPS https) throws IOException {
-        super(address, NUMBER_OF_THREADS, https);
+    private S3Server(InetSocketAddress address, InputStream keystoreInputSteam, char[] password) throws IOException {
+        super(address, NUMBER_OF_THREADS, initHttpsServer(keystoreInputSteam, password));
+        this.isHttps = true;
     }
+
+    public static S3Server createHttpServer() throws IOException {
+        return new S3Server(null);
+    }
+
+    public static S3Server createHttpServer(InetSocketAddress address) throws IOException {
+        return new S3Server(address);
+    }
+
+    public static S3Server createHttpsServer(InputStream keystoreInputSteam, char[] password) throws IOException {
+        return new S3Server(null, keystoreInputSteam, password);
+    }
+
+    public static S3Server createHttpsServer(
+        InetSocketAddress address,
+        InputStream keystoreInputSteam, char[]
+        password) throws IOException {
+        return new S3Server(address, keystoreInputSteam, password);
+    }
+
+    private static HttpServer initHttpsServer(InputStream keystoreInputSteam, char[] password) throws IOException {
+            try {
+                KeyStore ks = KeyStore.getInstance("JKS");
+                ks.load(keystoreInputSteam, password);
+                KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+                kmf.init(ks, password);
+
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+                tmf.init(ks);
+
+                SSLContext sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+                HttpsServer httpsServer = HttpsServer.create();
+                httpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
+                return httpsServer;
+            } catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | UnrecoverableKeyException
+                | KeyManagementException e) {
+                throw new RuntimeException(e);
+            }
+    }
+
 
     @Override
     protected void handleGet(HttpExchange exchange) throws IOException {
@@ -114,6 +167,17 @@ public class S3Server extends Server {
         }
 
         respondErrorAndClose(exchange, ErrorResponse.INVALID_URI);
+    }
+
+    @Override
+    public String getAddress() {
+            String protocol;
+            if (isHttps) {
+                protocol = "https://";
+            } else {
+                protocol = "http://";
+            }
+            return protocol + address.getHostName() + ":" + address.getPort();
     }
 
     private void handleGetObject(HttpExchange exchange, String bucketName, String keyName) throws IOException {

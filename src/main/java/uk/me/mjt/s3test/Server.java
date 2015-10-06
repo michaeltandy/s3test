@@ -1,15 +1,12 @@
 package uk.me.mjt.s3test;
 
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.*;
-import java.security.*;
-import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,45 +17,18 @@ public abstract class Server {
     public static final int BASE_PORT_NUMBER = 8000;
     public static final int PORT_NUMBER_RANGE = 1000;
 
-    private InetSocketAddress address;
+    private InetSocketAddress hostName;
     private final int numberOfThreads;
-    private HTTPS https;
 
     private final HttpServer httpServer;
     private ExecutorService executorService = null;
 
-    public Server(InetSocketAddress address, int numberOfThreads, HTTPS https
+    public Server(InetSocketAddress hostName, int numberOfThreads, HttpServer httpServer
     ) throws IOException {
-        this.address = address;
+        this.hostName = hostName;
         this.numberOfThreads = numberOfThreads;
-        this.https = https;
-        this.httpServer = createHttpServer(https);
+        this.httpServer = httpServer;
         createContextAndRegisterHandler();
-    }
-
-    private HttpServer createHttpServer(HTTPS https) throws IOException {
-        if (https.equals(HTTPS.ENABLED)) {
-            try {
-                KeyStore ks = KeyStore.getInstance("JKS");
-                ks.load(this.getClass().getResourceAsStream("/keystore.jks"), "password".toCharArray());
-                KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-                kmf.init(ks, "password".toCharArray());
-
-                TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-                tmf.init(ks);
-
-                SSLContext sslContext = SSLContext.getInstance("TLS");
-                sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-                HttpsServer httpsServer = HttpsServer.create();
-                httpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
-                return httpsServer;
-            } catch (NoSuchAlgorithmException | CertificateException | KeyStoreException | UnrecoverableKeyException
-                | KeyManagementException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            return HttpServer.create();
-        }
     }
 
     protected abstract void handleGet(HttpExchange httpExchange) throws IOException;
@@ -66,6 +36,8 @@ public abstract class Server {
     protected abstract void handlePut(HttpExchange httpExchange) throws IOException;
 
     protected abstract void handleDelete(HttpExchange httpExchange) throws IOException;
+
+    public abstract String getAddress() ;
 
     public void start() throws IOException {
         executorService = Executors.newFixedThreadPool(numberOfThreads, new ThreadFactory() {
@@ -77,8 +49,8 @@ public abstract class Server {
         });
         httpServer.setExecutor(executorService);
 
-        if (address != null) {
-            httpServer.bind(address, 0);
+        if (hostName != null) {
+            httpServer.bind(hostName, 0);
         } else {
             bindToRandomPort();
         }
@@ -89,16 +61,6 @@ public abstract class Server {
         httpServer.stop(1);
         executorService.shutdown();
         executorService = null;
-    }
-
-    public String getAddress() {
-        String protocol;
-        if (https.equals(HTTPS.ENABLED)) {
-            protocol = "https://";
-        } else {
-            protocol = "http://";
-        }
-        return protocol + address.getHostName() + ":" + address.getPort();
     }
 
     public String getQueryParamValue(URI requestURI, String name) {
@@ -202,7 +164,7 @@ public abstract class Server {
         try {
             InetSocketAddress binding = new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
             httpServer.bind(binding, 0);
-            address = binding;
+            hostName = binding;
             return true;
         } catch (BindException e) {
             return false;
