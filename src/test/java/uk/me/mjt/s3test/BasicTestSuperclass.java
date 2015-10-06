@@ -1,9 +1,5 @@
 package uk.me.mjt.s3test;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
 import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -13,6 +9,10 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import org.junit.After;
 import org.junit.Before;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 public class BasicTestSuperclass {
 
     S3Server instance;
@@ -20,7 +20,7 @@ public class BasicTestSuperclass {
 
     @Before
     public void setUp() throws Exception {
-        instance = new S3Server();
+        instance = S3Server.createHttpServer();
         instance.start();
         client = new AmazonS3Client(new StaticCredentialsProvider(new AnonymousAWSCredentials()));
         client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
