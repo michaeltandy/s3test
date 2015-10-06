@@ -177,7 +177,7 @@ public class S3Server extends Server {
             } else {
                 protocol = "http://";
             }
-            return protocol + address.getHostName() + ":" + address.getPort();
+            return protocol + hostName.getHostName() + ":" + hostName.getPort();
     }
 
     private void handleGetObject(HttpExchange exchange, String bucketName, String keyName) throws IOException {

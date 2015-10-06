@@ -17,7 +17,7 @@ public abstract class Server {
     public static final int BASE_PORT_NUMBER = 8000;
     public static final int PORT_NUMBER_RANGE = 1000;
 
-    private InetSocketAddress hostName;
+    protected InetSocketAddress hostName;
     private final int numberOfThreads;
 
     private final HttpServer httpServer;
