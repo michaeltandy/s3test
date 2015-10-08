@@ -5,8 +5,6 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import javax.xml.bind.DatatypeConverter;
@@ -97,21 +95,6 @@ public class MultipleRequestTest {
     private static AmazonS3Client amazonS3;
     private static AmazonS3Client amazonS3Https;
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        if (s3Server != null) {
-            s3Server.stop();
-        }
-
-        if (s3ServerHttps != null) {
-            s3ServerHttps.stop();
-        }
-    }
-
     @Test
     public void wot() throws Exception {
         // User on Windows reported:
@@ -133,6 +116,7 @@ public class MultipleRequestTest {
                 )
             );
         }
+        s3Server.stop();
     }
 
     @Test
@@ -146,7 +130,7 @@ public class MultipleRequestTest {
         setUpS3ServerHttps();
 
         for (int i=0 ; i<10 ; i++) {
-            amazonS3.putObject(
+            amazonS3Https.putObject(
                 new PutObjectRequest(
                     BUCKET,
                     KEY,
@@ -155,6 +139,8 @@ public class MultipleRequestTest {
                 )
             );
         }
+
+        s3ServerHttps.stop();
     }
 
     private static void setUpS3Server() throws IOException {
@@ -168,7 +154,7 @@ public class MultipleRequestTest {
     private static void setUpS3ServerHttps() throws IOException {
         s3ServerHttps = S3Server.createHttpsServer(
             new InetSocketAddress(S3_SERVER_PORT_HTTPS),
-            MultipleRequestTest.class.getResourceAsStream("/keystoe.jks"),
+            MultipleRequestTest.class.getResourceAsStream("/keystore.jks"),
             "password".toCharArray()
         );
         s3ServerHttps.start();
