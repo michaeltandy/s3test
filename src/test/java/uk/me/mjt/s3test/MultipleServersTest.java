@@ -49,4 +49,80 @@ public class MultipleServersTest {
         }
     }
 
+    @Test
+    public void testStartTwoHttpsServers() throws Exception {
+        S3Server instanceA = null;
+        S3Server instanceB = null;
+        AmazonS3Client client = null;
+
+        try {
+            instanceA = S3Server.createHttpsServer(
+                MultipleRequestTest.class.getResourceAsStream("/keystore.jks"),
+                "password".toCharArray()
+            );
+
+            instanceB = S3Server.createHttpsServer(
+                MultipleRequestTest.class.getResourceAsStream("/keystore.jks"),
+                "password".toCharArray()
+            );
+
+            instanceA.start();
+            instanceB.start();
+
+            client = new AmazonS3Client(new StaticCredentialsProvider(new AnonymousAWSCredentials()));
+            client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
+            client.setEndpoint(instanceA.getAddress());
+            BasicTestSuperclass.createDefaultBucket(client);
+            S3Object response = client.getObject("bucketname", "asdf.txt");
+            String content = inputStreamToString(response.getObjectContent());
+            assertEquals("asdf",content);
+
+            assertFalse(instanceA.getAddress().equals(instanceB.getAddress()));
+
+        } finally {
+            if (client!=null)
+                client.shutdown();
+            if (instanceA!=null)
+                instanceA.stop();
+            if (instanceB!=null)
+                instanceB.stop();
+        }
+    }
+
+    @Test
+    public void testStartBothHttpsAndHttpServers() throws Exception {
+        S3Server instanceA = null;
+        S3Server instanceB = null;
+        AmazonS3Client client = null;
+
+        try {
+            instanceA = S3Server.createHttpsServer(
+                MultipleRequestTest.class.getResourceAsStream("/keystore.jks"),
+                "password".toCharArray()
+            );
+
+            instanceB = S3Server.createHttpServer();
+
+            instanceA.start();
+            instanceB.start();
+
+            client = new AmazonS3Client(new StaticCredentialsProvider(new AnonymousAWSCredentials()));
+            client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true));
+            client.setEndpoint(instanceA.getAddress());
+            BasicTestSuperclass.createDefaultBucket(client);
+            S3Object response = client.getObject("bucketname", "asdf.txt");
+            String content = inputStreamToString(response.getObjectContent());
+            assertEquals("asdf",content);
+
+            assertFalse(instanceA.getAddress().equals(instanceB.getAddress()));
+
+        } finally {
+            if (client!=null)
+                client.shutdown();
+            if (instanceA!=null)
+                instanceA.stop();
+            if (instanceB!=null)
+                instanceB.stop();
+        }
+    }
 }
