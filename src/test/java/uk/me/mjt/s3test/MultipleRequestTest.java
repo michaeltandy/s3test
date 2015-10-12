@@ -144,7 +144,7 @@ public class MultipleRequestTest {
     }
 
     private static void setUpS3Server() throws IOException {
-        s3Server = S3Server.createHttpServer(new InetSocketAddress(S3_SERVER_PORT_HTTPS));
+        s3Server = S3Server.createHttpServer(new InetSocketAddress(S3_SERVER_PORT));
         s3Server.start();
 
         amazonS3 = getAmazonS3Client(s3Server);
