@@ -3,11 +3,14 @@ package uk.me.mjt.s3test;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -88,10 +91,7 @@ public abstract class Server {
         int contentLength = Integer.parseInt(lengthHeader);
         if (contentLength > 0) {
             byte[] content = new byte[contentLength];
-            InputStream inputStream = exchange.getRequestBody();
-            int lengthRead = inputStream.read(content);
-            inputStream.close();
-            content = Arrays.copyOf(content, lengthRead);
+            IOUtils.read(exchange.getRequestBody(), content, 0, contentLength);
             return content;
         } else {
             return new byte[0];
