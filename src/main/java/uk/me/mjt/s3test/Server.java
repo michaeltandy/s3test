@@ -3,9 +3,9 @@ package uk.me.mjt.s3test;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.*;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +19,7 @@ public abstract class Server {
 
     public static final int BASE_PORT_NUMBER = 8000;
     public static final int PORT_NUMBER_RANGE = 1000;
+    private static final int EOF = -1;
 
     protected InetSocketAddress hostName;
     private final int numberOfThreads;
@@ -91,7 +92,16 @@ public abstract class Server {
         int contentLength = Integer.parseInt(lengthHeader);
         if (contentLength > 0) {
             byte[] content = new byte[contentLength];
-            IOUtils.read(exchange.getRequestBody(), content, 0, contentLength);
+            int remaining = contentLength;
+            InputStream requestBodyStream = exchange.getRequestBody();
+            while (remaining > 0) {
+                int location = contentLength - remaining;
+                int count = requestBodyStream.read(content, location, remaining);
+                if (EOF == count) { // EOF
+                    break;
+                }
+                remaining -= count;
+            }
             return content;
         } else {
             return new byte[0];
