@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>uk.me.mjt</groupId>
     <artifactId>s3test</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
-            <version>1.7.7</version>
+            <version>1.10.26</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -29,6 +29,19 @@
     <!-- See http://wiki.netbeans.org/MavenCodeCoverage -->
     <build>
     <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.18.1</version>
+            <configuration>
+                <argLine>
+                    -Djavax.net.ssl.keyStore=${basedir}/src/test/resources/keystore.jks
+                    -Djavax.net.ssl.keyStorePassword=password
+                    -Djavax.net.ssl.trustStore=${basedir}/src/test/resources/keystore.jks
+                    -Djavax.net.ssl.trustStorePassword=password
+                </argLine>
+            </configuration>
+        </plugin>
         <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>

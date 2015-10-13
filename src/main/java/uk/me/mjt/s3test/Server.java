@@ -1,13 +1,12 @@
 package uk.me.mjt.s3test;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.BindException;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.Arrays;
+import java.net.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,26 +15,23 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-
 public abstract class Server {
 
     public static final int BASE_PORT_NUMBER = 8000;
     public static final int PORT_NUMBER_RANGE = 1000;
+    private static final int EOF = -1;
 
-    private InetSocketAddress address;
+    protected InetSocketAddress hostName;
     private final int numberOfThreads;
 
     private final HttpServer httpServer;
     private ExecutorService executorService = null;
 
-    public Server(InetSocketAddress address,
-                  int numberOfThreads) throws IOException {
-        this.address = address;
+    public Server(InetSocketAddress hostName, int numberOfThreads, HttpServer httpServer
+    ) throws IOException {
+        this.hostName = hostName;
         this.numberOfThreads = numberOfThreads;
-        this.httpServer = HttpServer.create();
+        this.httpServer = httpServer;
         createContextAndRegisterHandler();
     }
 
@@ -44,6 +40,8 @@ public abstract class Server {
     protected abstract void handlePut(HttpExchange httpExchange) throws IOException;
 
     protected abstract void handleDelete(HttpExchange httpExchange) throws IOException;
+
+    public abstract String getAddress() ;
 
     public void start() throws IOException {
         executorService = Executors.newFixedThreadPool(numberOfThreads, new ThreadFactory() {
@@ -55,8 +53,8 @@ public abstract class Server {
         });
         httpServer.setExecutor(executorService);
 
-        if (address != null) {
-            httpServer.bind(address, 0);
+        if (hostName != null) {
+            httpServer.bind(hostName, 0);
         } else {
             bindToRandomPort();
         }
@@ -67,10 +65,6 @@ public abstract class Server {
         httpServer.stop(1);
         executorService.shutdown();
         executorService = null;
-    }
-
-    public String getAddress() {
-        return "http://" + address.getHostName() + ":" + address.getPort();
     }
 
     public String getQueryParamValue(URI requestURI, String name) {
@@ -98,10 +92,16 @@ public abstract class Server {
         int contentLength = Integer.parseInt(lengthHeader);
         if (contentLength > 0) {
             byte[] content = new byte[contentLength];
-            InputStream inputStream = exchange.getRequestBody();
-            int lengthRead = inputStream.read(content);
-            inputStream.close();
-            content = Arrays.copyOf(content, lengthRead);
+            int remaining = contentLength;
+            InputStream requestBodyStream = exchange.getRequestBody();
+            while (remaining > 0) {
+                int location = contentLength - remaining;
+                int count = requestBodyStream.read(content, location, remaining);
+                if (EOF == count) { // EOF
+                    break;
+                }
+                remaining -= count;
+            }
             return content;
         } else {
             return new byte[0];
@@ -174,7 +174,7 @@ public abstract class Server {
         try {
             InetSocketAddress binding = new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
             httpServer.bind(binding, 0);
-            address = binding;
+            hostName = binding;
             return true;
         } catch (BindException e) {
             return false;

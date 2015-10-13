@@ -9,7 +9,12 @@ Written in core java, with no external dependencies (not even the AWS client or 
 ## So how do I use it?
 
 ```
-    S3Server instance = new S3Server();
+    //Create a HTTP s3 server
+    S3Server instance = S3Server.createHttpServer();
+
+    //Create a HTTPS s3 server
+    S3Server httpsInstance = S3Server.createHttpsServer(keyStoreInputStream, keyStorePassword)
+
     instance.start();
 
     AmazonS3Client client = new AmazonS3Client(new StaticCredentialsProvider(new AnonymousAWSCredentials()));
@@ -22,7 +27,18 @@ Written in core java, with no external dependencies (not even the AWS client or 
     instance.stop();   // server gets shut down even if an assertion fails.
 ```
 
-If constructed without any parameters, the server binds to a port chosen at random.
+To make your s3Client trust the certificate sent by s3Server, you will need to add the same keystore to your JVM by
+adding following JVM parameters:
+
+```
+-Djavax.net.ssl.keyStore=<path to keystore.jks>
+-Djavax.net.ssl.keyStorePassword=<password>
+-Djavax.net.ssl.trustStore=<path to keystore.jks>
+-Djavax.net.ssl.trustStorePassword=<password>
+```
+
+
+If constructed without InetSocketAddress specified, the server binds to localhost with a port chosen at random.
 This means you can run several tests in parallel and they'll each have their own independent S3Server.
 
 ## Sounds good. So what doesn't it do?
