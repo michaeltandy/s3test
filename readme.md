@@ -8,7 +8,7 @@ Written in core java, with no external dependencies (not even the AWS client or 
 
 ## You might not want to use this.
 
-I'm no longer really convinced this is a very useful project. It was never as fast as I hoped for, and a change to the AWS client which forces https which makes this library a lot less convenient to use. You should consider injecting a mock AmazonS3Client using a library like mockito.
+**I'm no longer really convinced this is a useful project.** It was never as fast as I hoped for, and a change to the AWS client which forces https which makes this library a lot less convenient to use. For these reasons, tests using this library may well make your codebase harder to understand and maintain, not easier. You should consider injecting a mock AmazonS3Client using a library like mockito.
 
 ## So how do I use it?
 
