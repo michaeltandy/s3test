@@ -6,6 +6,10 @@ Written in core java, with no external dependencies (not even the AWS client or 
 
 [Travis build status](https://travis-ci.org/michaeltandy/s3test): ![Travis Continuous Integration build status image](https://api.travis-ci.org/michaeltandy/s3test.svg)
 
+## You might not want to use this.
+
+I'm no longer really convinced this is a very useful project. It was never as fast as I hoped for, and a change to the AWS client which forces https which makes this library a lot less convenient to use. You should consider injecting a mock AmazonS3Client using a library like mockito.
+
 ## So how do I use it?
 
 ```
